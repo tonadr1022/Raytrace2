@@ -6,6 +6,10 @@ set(SOURCES
     Window.cpp
     EAssert.cpp
     pch.cpp
+    gl/Texture.cpp
+    gl/Shader.cpp
+    gl/ShaderManager.cpp
+    gl/VertexArray.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -18,9 +22,13 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     endif()
 endif()
 
-add_compile_definitions(SRC_PATH="${CMAKE_SOURCE_DIR}/")
+add_compile_definitions(SRC_PATH="${CMAKE_SOURCE_DIR}")
 target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/pch.hpp)
 
+
+# For std::execution::par
+find_package(TBB REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>

@@ -1,9 +1,6 @@
 #include "ShaderManager.hpp"
 
-#include <shaderc/shaderc.h>
-
 #include <fstream>
-#include <shaderc/shaderc.hpp>
 
 namespace gl {
 
@@ -42,7 +39,7 @@ ShaderManager::ShaderManager() {
 std::optional<Shader> ShaderManager::GetShader(const std::string &name) {
   auto it = shader_data_.find(name);
   if (it == shader_data_.end()) {
-    spdlog::error("Shader not found {}", name.data());
+    std::cerr << "Shader not found " << name << '\n';
     return std::nullopt;
   }
   return Shader{it->second.program_id, it->second.uniform_locations};
@@ -71,7 +68,7 @@ bool CheckShaderModuleCompilationSuccess(uint32_t shader_id, const char *shaderP
   if (!success) {
     char buffer[512];
     glGetShaderInfoLog(shader_id, 512, nullptr, buffer);
-    spdlog::error("Error compiling shader file: {}\n{}", shaderPath, buffer);
+    std::cerr << "Error compiling shader file " << shaderPath << '\n' << buffer << '\n';
     return false;
   }
   return true;
@@ -87,7 +84,7 @@ bool CheckProgramLinkSuccess(GLuint id) {
   if (!success) {
     char buffer[512];
     glGetProgramInfoLog(id, 512, nullptr, buffer);
-    spdlog::error("Shader Link error {}", buffer);
+    std::cerr << "Shader link error " << buffer << '\n';
     return false;
   }
   return true;
@@ -100,33 +97,6 @@ uint32_t CompileShader(ShaderType type, const char *src) {
   return id;
 }
 
-namespace {
-// constexpr shaderc_shader_kind kShaderTypeToShaderCType[]{
-//     shaderc_vertex_shader,
-//     shaderc_fragment_shader,
-//     shaderc_geometry_shader,
-//     shaderc_compute_shader,
-// };
-
-// std::string PreprocessShader(const std::string &source,
-//                              const std::vector<std::pair<std::string, std::string>> &defines,
-//                              shaderc_shader_kind kind, const std::string &name) {
-//   shaderc::Compiler compiler;
-//   shaderc::CompileOptions options;
-//   for (const auto &[name, val] : defines) {
-//     options.AddMacroDefinition(name, val);
-//   }
-//   shaderc::PreprocessedSourceCompilationResult result =
-//       compiler.PreprocessGlsl(source, kind, name.c_str(), options);
-//   if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
-//     spdlog::error("{}", result.GetErrorMessage());
-//     return "";
-//   }
-//
-//   return {result.cbegin(), result.cend()};
-// }
-}  // namespace
-
 std::optional<ShaderManager::ShaderProgramData> ShaderManager::CompileProgram(
     const std::string &name, const std::vector<ShaderCreateInfo> &create_info_vec) {
   std::vector<uint32_t> shader_ids;
@@ -134,12 +104,12 @@ std::optional<ShaderManager::ShaderProgramData> ShaderManager::CompileProgram(
     auto src = util::LoadFromFile(create_info.shaderPath);
 
     if (!src.has_value()) {
-      spdlog::error("Failed to load from file {}", create_info.shaderPath);
+      std::cerr << "Failed to laod from file " << create_info.shaderPath << '\n';
       return std::nullopt;
     }
     uint32_t shader_id = CompileShader(create_info.shaderType, src.value().c_str());
     if (!CheckShaderModuleCompilationSuccess(shader_id, create_info.shaderPath.c_str())) {
-      spdlog::error("error: {}", create_info.shaderPath.c_str());
+      std::cerr << "error: " << create_info.shaderPath << '\n';
       return std::nullopt;
     }
     shader_ids.push_back(shader_id);
@@ -165,14 +135,14 @@ std::optional<ShaderManager::ShaderProgramData> ShaderManager::CompileProgram(
 std::optional<Shader> ShaderManager::RecompileShader(const std::string &name) {
   auto it = shader_data_.find(name);
   if (it == shader_data_.end()) {
-    spdlog::warn("Shader not found, cannot recompile: {}", name.data());
+    std::cerr << "Shader not found, cannot recompile " << name << '\n';
     return std::nullopt;
   }
   auto recompile_result = CompileProgram(name, it->second.create_info_vec);
   if (!recompile_result.has_value()) {
     return std::nullopt;
   }
-  spdlog::info("Shader recompiled: {}", name.data());
+  std::cout << "Shader recompiled " << name << '\n';
   shader_data_.erase(it);
   auto new_it = shader_data_.emplace(name, recompile_result.value());
   return Shader{new_it.first->second.program_id, new_it.first->second.uniform_locations};

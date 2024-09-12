@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/mat4x4.hpp>
+
 namespace gl {
 
 // Lightweight object containing id and reference to uniform locations stored in the manager.

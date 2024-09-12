@@ -2,9 +2,13 @@
 
 #include <GL/glew.h>
 
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <functional>
+#include <glm/ext/vector_double3.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <iostream>
