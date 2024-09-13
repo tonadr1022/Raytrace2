@@ -10,6 +10,9 @@ set(SOURCES
     gl/Shader.cpp
     gl/ShaderManager.cpp
     gl/VertexArray.cpp
+    cpu_raytrace/Sphere.cpp
+    cpu_raytrace/Interval.cpp
+    cpu_raytrace/RayTracer.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
