@@ -12,7 +12,7 @@ class App {
 
  private:
   void OnResize(glm::ivec2 dims);
-  cpu::RayTracer rt_;
+  cpu::RayTracer cpu_tracer_;
 };
 
 }  // namespace raytrace2

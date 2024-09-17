@@ -13,6 +13,7 @@ set(SOURCES
     cpu_raytrace/Sphere.cpp
     cpu_raytrace/Interval.cpp
     cpu_raytrace/RayTracer.cpp
+    cpu_raytrace/Material.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

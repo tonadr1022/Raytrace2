@@ -9,7 +9,9 @@
 #include "Defs.hpp"
 #include "Paths.hpp"
 #include "Window.hpp"
+#include "cpu_raytrace/Material.hpp"
 #include "cpu_raytrace/Scene.hpp"
+#include "cpu_raytrace/Sphere.hpp"
 #include "gl/Buffer.hpp"
 #include "gl/ShaderManager.hpp"
 #include "gl/Texture.hpp"
@@ -66,7 +68,7 @@ void App::OnResize(glm::ivec2 dims) {
                                                                       .internal_format = GL_RGB8,
                                                                       .min_filter = GL_NEAREST,
                                                                       .mag_filter = GL_NEAREST});
-  rt_.OnResize(dims);
+  cpu_tracer_.OnResize(dims);
 }
 
 void App::Run() {
@@ -80,8 +82,8 @@ void App::Run() {
   Quad quad;
   quad.Init();
   bool imgui_enabled{true};
+  cpu_tracer_.camera.SetCenter(glm::vec3(0));
   OnResize(window.GetWindowSize());
-  rt_.camera.SetCenter(glm::vec3(0));
 
   GLuint fbo;
   glCreateFramebuffers(1, &fbo);
@@ -94,8 +96,19 @@ void App::Run() {
   double dt = 0;
 
   cpu::Scene scene;
-  scene.spheres.emplace_back(vec3{0, 0, -1}, 0.5);
-  scene.spheres.emplace_back(vec3{0, -100.5, -1}, 100);
+  cpu::LambertianMaterial mat_ground{.albedo = vec3{0.8, 0.8, 0.0}};
+  cpu::LambertianMaterial mat_center{.albedo = vec3{0.1, 0.2, 0.5}};
+  cpu::MetalMaterial mat_left{.albedo = {0.8, 0.8, 0.8}};
+  cpu::MetalMaterial mat_right{.albedo = {0.8, 0.6, 0.2}};
+
+  scene.spheres.emplace_back(
+      cpu::Sphere{.center = vec3{0, -100.5, -1}, .radius = 100, .material = mat_ground});
+  scene.spheres.emplace_back(
+      cpu::Sphere{.center = vec3{0, 0, -1.2f}, .radius = 0.5, .material = mat_center});
+  scene.spheres.emplace_back(
+      cpu::Sphere{.center = vec3{-1, 0, -1.0}, .radius = 0.5, .material = mat_left});
+  scene.spheres.emplace_back(
+      cpu::Sphere{.center = vec3{1, 0, -1}, .radius = 0.5, .material = mat_right});
 
   while (!window.ShouldClose()) {
     ZoneScoped;
@@ -115,7 +128,7 @@ void App::Run() {
 
     window.PollEvents();
 
-    rt_.Update(scene);
+    cpu_tracer_.Update(scene);
 
     window.StartRenderFrame(imgui_enabled);
     ImGui::Begin("Settings");
@@ -124,13 +137,14 @@ void App::Run() {
       window.SetVsync(vsync);
     }
     ImGui::End();
+    cpu_tracer_.OnImGui();
 
     glClearColor(0.1, 0.1, 0.1, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     output_tex->Bind(0);
     glTextureSubImage2D(output_tex->Id(), 0, 0, 0, viewport_dims.x, viewport_dims.y, GL_RGB,
-                        GL_UNSIGNED_BYTE, rt_.Pixels().data());
+                        GL_UNSIGNED_BYTE, cpu_tracer_.Pixels().data());
     quad.Draw();
 
     window.EndRenderFrame(imgui_enabled);
