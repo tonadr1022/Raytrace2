@@ -11,6 +11,7 @@
 #include <glm/geometric.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 #include <iostream>
 #include <map>
 #include <memory>

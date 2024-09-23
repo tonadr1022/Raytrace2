@@ -11,7 +11,7 @@ namespace raytrace2::cpu {
 struct Sphere {
   vec3 center;
   float radius;
-  const MaterialVariant& material;
+  std::shared_ptr<MaterialVariant> material;
   bool Hit(const Ray& r, Interval ray_t, HitRecord& rec) const;
 };
 }  // namespace raytrace2::cpu

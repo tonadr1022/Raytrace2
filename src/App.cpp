@@ -9,6 +9,7 @@
 #include "Defs.hpp"
 #include "Paths.hpp"
 #include "Window.hpp"
+#include "cpu_raytrace/Fwd.hpp"
 #include "cpu_raytrace/Material.hpp"
 #include "cpu_raytrace/Scene.hpp"
 #include "cpu_raytrace/Sphere.hpp"
@@ -65,7 +66,7 @@ void App::OnResize(glm::ivec2 dims) {
   output_tex = std::make_unique<gl::Texture>(gl::Tex2DCreateInfoEmpty{.dims = dims,
                                                                       .wrap_s = GL_REPEAT,
                                                                       .wrap_t = GL_REPEAT,
-                                                                      .internal_format = GL_RGB8,
+                                                                      .internal_format = GL_RGBA8,
                                                                       .min_filter = GL_NEAREST,
                                                                       .mag_filter = GL_NEAREST});
   cpu_tracer_.OnResize(dims);
@@ -96,10 +97,14 @@ void App::Run() {
   double dt = 0;
 
   cpu::Scene scene;
-  cpu::LambertianMaterial mat_ground{.albedo = vec3{0.8, 0.8, 0.0}};
-  cpu::LambertianMaterial mat_center{.albedo = vec3{0.1, 0.2, 0.5}};
-  cpu::MetalMaterial mat_left{.albedo = {0.8, 0.8, 0.8}};
-  cpu::MetalMaterial mat_right{.albedo = {0.8, 0.6, 0.2}};
+  auto mat_ground = std::make_shared<cpu::MaterialVariant>(
+      cpu::LambertianMaterial{.albedo = vec3{0.8, 0.8, 0.0}});
+  auto mat_center = std::make_shared<cpu::MaterialVariant>(
+      cpu::LambertianMaterial{.albedo = vec3{0.1, 0.2, 0.5}});
+  auto mat_left =
+      std::make_shared<cpu::MaterialVariant>(cpu::MetalMaterial{.albedo = vec3{0.8, 0.8, 0.8}});
+  auto mat_right =
+      std::make_shared<cpu::MaterialVariant>(cpu::MetalMaterial{.albedo = vec3{0.8, 0.6, 0.2}});
 
   scene.spheres.emplace_back(
       cpu::Sphere{.center = vec3{0, -100.5, -1}, .radius = 100, .material = mat_ground});
@@ -143,7 +148,7 @@ void App::Run() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     output_tex->Bind(0);
-    glTextureSubImage2D(output_tex->Id(), 0, 0, 0, viewport_dims.x, viewport_dims.y, GL_RGB,
+    glTextureSubImage2D(output_tex->Id(), 0, 0, 0, viewport_dims.x, viewport_dims.y, GL_RGBA,
                         GL_UNSIGNED_BYTE, cpu_tracer_.Pixels().data());
     quad.Draw();
 

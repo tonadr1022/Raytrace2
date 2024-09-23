@@ -13,37 +13,40 @@ namespace raytrace2::cpu {
 
 namespace {
 
-constexpr int kMaxDepth = 50;
+constexpr int kMaxDepth = 10;
 
 color ToColor(const vec3& col) {
-  return color{floor(col.x * 255.999), floor(col.y * 255.999), floor(col.z * 255.999)};
+  return color{floor(col.x * 255.999), floor(col.y * 255.999), floor(col.z * 255.999), 255};
 }
-
-// vec3 UnitSphereVecToColor(const vec3& normal) {
-//   return vec3{normal.x + 1, normal.y + 1, normal.z + 1} * 0.5f;
-// }
 
 float col = 0.5f;
 vec3 RayColor(const cpu::Ray& r, int depth, const cpu::Scene& scene) {
-  if (depth <= 0) {
-    return vec3{0};
-  }
-  cpu::HitRecord rec;
-  bool hit_any_sphere =
-      HitAny(std::span<cpu::Sphere const>(scene.spheres), r, cpu::Interval{0.001, kInfinity}, rec);
-  if (hit_any_sphere) {
-    Ray scattered;
-    vec3 attenutation;
-    EASSERT(rec.material != nullptr);
-    if (Scatter(*rec.material, r, rec, attenutation, scattered)) {
-      return attenutation * RayColor(scattered, depth - 1, scene);
+  vec3 attenutation{1};
+  Ray scattered = r;
+  while (depth > 0) {
+    cpu::HitRecord rec;
+    bool hit_any_sphere = HitAny(std::span<cpu::Sphere const>(scene.spheres), scattered,
+                                 cpu::Interval{0.001, kInfinity}, rec);
+    if (hit_any_sphere) {
+      vec3 local_attenuation;
+      EASSERT(rec.material != nullptr);
+      if (Scatter(*rec.material, scattered, rec, local_attenuation, scattered)) {
+        attenutation *= local_attenuation;
+      } else {
+        // no scatter, so absorb the ray
+        return vec3{0};
+      }
+    } else {
+      // calc background and break if no hit
+      vec3 unit_dir = glm::normalize(scattered.direction);
+      float a = 0.5f * (unit_dir.y + 1.0);
+      attenutation *= (1.0f - a) * vec3{1, 1, 1} + a * vec3{0.5, 0.7, 1.0};
+      break;
     }
-    return vec3{0};
-  }
 
-  vec3 unit_dir = glm::normalize(r.direction);
-  float a = 0.5f * (unit_dir.y + 1.0);
-  return (1.0f - a) * vec3{1, 1, 1} + a * vec3{0.5, 0.7, 1.0};
+    depth--;
+  }
+  return attenutation;
 }
 
 }  // namespace
