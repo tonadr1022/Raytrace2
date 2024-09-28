@@ -16,6 +16,12 @@ struct Material {
 
 struct MetalMaterial : public Material<MetalMaterial> {
   vec3 albedo;
+  float fuzz{0};
+  bool Scatter(const Ray& r_in, const HitRecord& rec, vec3& attenuation, Ray& scattered) const;
+};
+
+struct DielectricMaterial : public Material<MetalMaterial> {
+  float refraction_index;
   bool Scatter(const Ray& r_in, const HitRecord& rec, vec3& attenuation, Ray& scattered) const;
 };
 

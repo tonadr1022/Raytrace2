@@ -101,10 +101,10 @@ void App::Run() {
       cpu::LambertianMaterial{.albedo = vec3{0.8, 0.8, 0.0}});
   auto mat_center = std::make_shared<cpu::MaterialVariant>(
       cpu::LambertianMaterial{.albedo = vec3{0.1, 0.2, 0.5}});
-  auto mat_left =
-      std::make_shared<cpu::MaterialVariant>(cpu::MetalMaterial{.albedo = vec3{0.8, 0.8, 0.8}});
-  auto mat_right =
-      std::make_shared<cpu::MaterialVariant>(cpu::MetalMaterial{.albedo = vec3{0.8, 0.6, 0.2}});
+  auto mat_left = std::make_shared<cpu::MaterialVariant>(
+      cpu::DielectricMaterial{.refraction_index = 1.f / 1.3f});
+  auto mat_right = std::make_shared<cpu::MaterialVariant>(
+      cpu::MetalMaterial{.albedo = vec3{0.8, 0.6, 0.2}, .fuzz = 1.0});
 
   scene.spheres.emplace_back(
       cpu::Sphere{.center = vec3{0, -100.5, -1}, .radius = 100, .material = mat_ground});

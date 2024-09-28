@@ -53,4 +53,11 @@ inline bool NearZero(const vec3& v) {
 
 inline vec3 Reflect(const vec3& v, const vec3& n) { return v - 2 * glm::dot(v, n) * n; }
 
+inline vec3 Refract(const vec3& uv, const vec3& n, float etai_over_etat) {
+  float cos_theta = std::fmin(glm::dot(-uv, n), 1.0);
+  vec3 r_out_perp = etai_over_etat * (uv + cos_theta * n);
+  vec3 r_out_parallel = -std::sqrt(std::fabs(1.0f - glm::dot(r_out_perp, r_out_perp))) * n;
+  return r_out_perp + r_out_parallel;
+}
+
 }  // namespace raytrace2::cpu::math
