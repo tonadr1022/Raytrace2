@@ -13,7 +13,7 @@ namespace raytrace2::cpu {
 
 namespace {
 
-constexpr int kMaxDepth = 10;
+constexpr int kMaxDepth = 50;
 
 color ToColor(const vec3& col) {
   return color{floor(col.x * 255.999), floor(col.y * 255.999), floor(col.z * 255.999), 255};
@@ -25,7 +25,7 @@ vec3 RayColor(const cpu::Ray& r, int depth, const cpu::Scene& scene) {
   Ray scattered = r;
   while (depth > 0) {
     cpu::HitRecord rec;
-    bool hit_any_sphere = HitAny(std::span<cpu::Sphere const>(scene.spheres), scattered,
+    bool hit_any_sphere = HitAny(scene, std::span<cpu::Sphere const>(scene.spheres), scattered,
                                  cpu::Interval{0.001, kInfinity}, rec);
     if (hit_any_sphere) {
       vec3 local_attenuation;
@@ -60,7 +60,7 @@ void RayTracer::Reset() {
 void RayTracer::Update(const Scene& scene) {
   frame_idx_++;
   auto per_pixel = [this, &scene](const glm::ivec3& idx) {
-    vec3 ray_color = math::LinearToGamma(RayColor(camera.GetRay(idx.x, idx.y), kMaxDepth, scene));
+    vec3 ray_color = math::LinearToGamma(RayColor(camera->GetRay(idx.x, idx.y), kMaxDepth, scene));
     accumulation_data_[idx.z] += ray_color;
     pixels_[idx.z] =
         ToColor(glm::clamp(accumulation_data_[idx.z] / static_cast<float>(frame_idx_), 0.0f, 1.0f));

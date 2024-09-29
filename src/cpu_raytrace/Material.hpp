@@ -14,21 +14,27 @@ struct Material {
   }
 };
 
-struct MetalMaterial : public Material<MetalMaterial> {
+struct MaterialMetal : public Material<MaterialMetal> {
   vec3 albedo;
   float fuzz{0};
   bool Scatter(const Ray& r_in, const HitRecord& rec, vec3& attenuation, Ray& scattered) const;
 };
 
-struct DielectricMaterial : public Material<MetalMaterial> {
+struct MaterialDielectric : public Material<MaterialMetal> {
   float refraction_index;
   bool Scatter(const Ray& r_in, const HitRecord& rec, vec3& attenuation, Ray& scattered) const;
 };
 
-struct LambertianMaterial : public Material<LambertianMaterial> {
+struct MaterialLambertian : public Material<MaterialLambertian> {
   vec3 albedo;
-  bool Scatter(const Ray& r_in, const HitRecord& rec, vec3& attenuation, Ray& scattered) const;
 };
+
+bool Scatter(const MaterialLambertian& mat, const Ray& r_in, const HitRecord& rec,
+             vec3& attenuation, Ray& scattered);
+bool Scatter(const MaterialDielectric& mat, const Ray& r_in, const HitRecord& rec,
+             vec3& attenuation, Ray& scattered);
+bool Scatter(const MaterialMetal& mat, const Ray& r_in, const HitRecord& rec, vec3& attenuation,
+             Ray& scattered);
 
 [[nodiscard]] extern bool Scatter(const MaterialVariant& mat, const Ray& ray, const HitRecord& rec,
                                   vec3& attenutation, Ray& scattered);

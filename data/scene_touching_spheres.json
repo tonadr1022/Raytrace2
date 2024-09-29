@@ -1,0 +1,28 @@
+{
+  "materials": [
+    {
+      "albedo": [0, 0, 1],
+      "id": 0,
+      "type": "lambertian"
+    },
+    {
+      "albedo": [1, 0, 0],
+      "id": 1,
+      "type": "lambertian"
+    }
+  ],
+  "primitives": {
+    "spheres": [
+      {
+        "center": [-0.70710678118, 0.0, -1],
+        "material_id": 0,
+        "radius": 0.70710678118
+      },
+      {
+        "center": [0.70710678118, 0.0, -1],
+        "material_id": 1,
+        "radius": 0.70710678118
+      }
+    ]
+  }
+}

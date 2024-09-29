@@ -6,11 +6,12 @@
 
 #include <cstddef>
 
-#include "Defs.hpp"
 #include "Paths.hpp"
+#include "Serialize.hpp"
+#include "Settings.hpp"
+#include "Util.hpp"
 #include "Window.hpp"
-#include "cpu_raytrace/Fwd.hpp"
-#include "cpu_raytrace/Material.hpp"
+#include "cpu_raytrace/Camera.hpp"
 #include "cpu_raytrace/Scene.hpp"
 #include "cpu_raytrace/Sphere.hpp"
 #include "gl/Buffer.hpp"
@@ -59,6 +60,70 @@ class Quad {
 std::unique_ptr<gl::Texture> output_tex;
 glm::ivec2 viewport_dims;
 
+cpu::Camera cam;
+
+void MakeAFinalRenderScene(cpu::Scene& scene) {
+  scene = {};
+  scene.materials.emplace_back(cpu::MaterialLambertian{.albedo = {0.5, 0.5, 0.5}});
+  scene.spheres.emplace_back(
+      cpu::Sphere{.center = {0, -1000, 0}, .radius = 1000, .material_handle = 0});
+  for (int a = -11; a < 11; a++) {
+    for (int b = -11; b < 11; b++) {
+      float choose_mat = cpu::math::RandFloat();
+      vec3 center{a + 0.9 * cpu::math::RandFloat(), 0.2, b + 0.9 * cpu::math::RandFloat()};
+      if (glm::length(center - vec3(4, 0.2, 0)) > 0.9) {
+        cpu::MaterialVariant mat;
+        if (choose_mat < 0.8) {
+          mat = cpu::MaterialLambertian{.albedo = cpu::math::RandVec3() * cpu::math::RandVec3()};
+        } else if (choose_mat < 0.95) {
+          mat = cpu::MaterialMetal{.albedo = cpu::math::RandVec3(0.5, 1),
+                                   .fuzz = cpu::math::RandFloat(0, 0.5)};
+        } else {
+          mat = cpu::MaterialDielectric{.refraction_index = 1.5};
+        }
+        scene.spheres.emplace_back(
+            cpu::Sphere{.center = center,
+                        .radius = 0.2,
+                        .material_handle = static_cast<uint32_t>(scene.materials.size())});
+        scene.materials.emplace_back(mat);
+      }
+    }
+  }
+
+  scene.spheres.emplace_back(
+      cpu::Sphere{.center = {0, 1, 0},
+                  .radius = 1.0,
+                  .material_handle = static_cast<uint32_t>(scene.materials.size())});
+  scene.materials.emplace_back(cpu::MaterialDielectric{.refraction_index = 1.5});
+
+  scene.spheres.emplace_back(
+      cpu::Sphere{.center = {-4, 1, 0},
+                  .radius = 1.0,
+                  .material_handle = static_cast<uint32_t>(scene.materials.size())});
+  scene.materials.emplace_back(cpu::MaterialLambertian{.albedo = {0.4, 0.2, 0.1}});
+
+  scene.spheres.emplace_back(
+      cpu::Sphere{.center = {4, 1, 0},
+                  .radius = 1.0,
+                  .material_handle = static_cast<uint32_t>(scene.materials.size())});
+  scene.materials.emplace_back(cpu::MaterialMetal{.albedo = {0.7, 0.6, 0.5}, .fuzz = 0.0});
+}
+
+struct GPUData {
+  gl::Buffer<cpu::MaterialLambertian> lambertian_buffer;
+  gl::Buffer<cpu::MaterialMetal> metal_buffer;
+  gl::Buffer<cpu::MaterialDielectric> dielectric_buffer;
+  gl::Buffer<cpu::Sphere> sphere_buffer;
+};
+GPUData data;
+void InitGpuData(GPUData& data) {
+  int count = 1000;
+  data.dielectric_buffer.Init(count, GL_DYNAMIC_STORAGE_BIT, nullptr);
+  data.metal_buffer.Init(count, GL_DYNAMIC_STORAGE_BIT, nullptr);
+  data.lambertian_buffer.Init(count, GL_DYNAMIC_STORAGE_BIT, nullptr);
+  data.sphere_buffer.Init(count, GL_DYNAMIC_STORAGE_BIT, nullptr);
+}
+
 }  // namespace
 
 void App::OnResize(glm::ivec2 dims) {
@@ -72,18 +137,113 @@ void App::OnResize(glm::ivec2 dims) {
   cpu_tracer_.OnResize(dims);
 }
 
+void UploadScene(GPUData& data, const cpu::Scene& scene) {
+  std::vector<cpu::MaterialLambertian> lambertians;
+  std::vector<cpu::MaterialMetal> metals;
+  std::vector<cpu::MaterialDielectric> dielectrics;
+  for (const auto& mat : scene.materials) {
+    std::visit(
+        [&](const auto& m) {
+          using T = std::decay_t<decltype(m)>;
+          if constexpr (std::is_same_v<T, cpu::MaterialLambertian>) {
+            lambertians.push_back(m);
+          } else if constexpr (std::is_same_v<T, cpu::MaterialMetal>) {
+            metals.push_back(m);
+          } else if constexpr (std::is_same_v<T, cpu::MaterialDielectric>) {
+            dielectrics.push_back(m);
+          }
+        },
+        mat);
+  }
+  // TODO: upload to gl buffers
+  data.dielectric_buffer.SubDataStart(dielectrics.size(), dielectrics.data());
+  data.metal_buffer.SubDataStart(metals.size(), metals.data());
+  data.lambertian_buffer.SubDataStart(lambertians.size(), lambertians.data());
+  int num_lambertians = 0;
+  int num_metals = 0;
+  int num_dielectrics = 0;
+  std::vector<GPUSphere> new_spheres(scene.spheres.size());
+  for (size_t i = 0; i < scene.spheres.size(); i++) {
+    const cpu::Sphere& sphere = scene.spheres[i];
+    cpu::Sphere new_sphere = sphere;
+    const auto& mat = scene.materials[sphere.material_handle];
+    using T = std::decay_t<decltype(mat)>;
+    uint32_t handle = 0;
+    if constexpr (std::is_same_v<T, cpu::MaterialLambertian>) {
+      handle = num_lambertians++;
+      handle = 0 << 16 | handle;
+    } else if constexpr (std::is_same_v<T, cpu::MaterialMetal>) {
+      handle = num_metals++;
+      handle = 2 << 16 | handle;
+    } else if constexpr (std::is_same_v<T, cpu::MaterialDielectric>) {
+      handle = num_dielectrics++;
+      handle = 1 << 16 | handle;
+    }
+    new_sphere.material_handle = handle;
+    new_spheres[i] = GPUSphere{.center = new_sphere.center,
+                               .radius = new_sphere.radius,
+                               .material_handle = new_sphere.material_handle};
+  }
+  std::cout << new_spheres[1].center.x << '\n';
+  data.sphere_buffer.SubDataStart(new_spheres.size(), new_spheres.data());
+}
+
+void BindGPUData(const GPUData& data) {
+  data.sphere_buffer.BindBase(GL_SHADER_STORAGE_BUFFER, 0);
+  data.dielectric_buffer.BindBase(GL_SHADER_STORAGE_BUFFER, 1);
+  data.metal_buffer.BindBase(GL_SHADER_STORAGE_BUFFER, 2);
+  data.lambertian_buffer.BindBase(GL_SHADER_STORAGE_BUFFER, 3);
+}
+
+void BindAndSetUniforms(cpu::Camera& cam, const cpu::Scene& scene) {
+  auto shader = gl::ShaderManager::Get().GetShader("rtiow").value();
+  shader.Bind();
+  // TODO: make getters for camera
+  shader.SetVec3("pixel00_loc", cam.pixel00_loc_);
+  shader.SetVec3("pixel_delta_u", cam.pixel_delta_u_);
+  shader.SetFloat("defocus_angle", cam.defocus_angle_);
+  // shader.SetFloat("focus_dist", cam.focus_dist_);
+  shader.SetVec2("resolution", cam.dims_);
+  shader.SetFloat("rand_seed", cpu::math::RandFloat());
+  shader.SetVec3("cam_center", cam.center_);
+  // shader.SetVec3("cam_lookat", cam.lookat_);
+  shader.SetVec3("defocus_disk_u", cam.defocus_disk_u_);
+  shader.SetVec3("defocus_disk_v", cam.defocus_disk_v_);
+  shader.SetFloat("num_spheres", scene.spheres.size());
+  // TODO: parameterize
+  shader.SetInt("max_depth", 10);
+}
+
 void App::Run() {
+  AppSettings app_settings = serialize::LoadAppSettings(GET_PATH("data/settings.json"));
   Window window{1600, 900, "raytrace_2", [this](SDL_Event& event) { OnEvent(event); }};
 
   gl::ShaderManager::Init();
   gl::ShaderManager::Get().AddShader(
       "textured_quad", {{GET_SHADER_PATH("textured_quad.vs.glsl"), gl::ShaderType::kVertex, {}},
                         {GET_SHADER_PATH("textured_quad.fs.glsl"), gl::ShaderType::kFragment, {}}});
+  gl::ShaderManager::Get().AddShader(
+      "rtiow", {{GET_SHADER_PATH("textured_quad.vs.glsl"), gl::ShaderType::kVertex, {}},
+                {GET_SHADER_PATH("rtiow.fs.glsl"), gl::ShaderType::kFragment, {}}});
+
+  CameraSettings cam_settings = serialize::LoadCameraSettings(GET_PATH("data/cam_config.json"));
+  serialize::WriteCameraSettings(cam_settings, GET_PATH("data/cam_config.json"));
 
   Quad quad;
   quad.Init();
   bool imgui_enabled{true};
-  cpu_tracer_.camera.SetCenter(glm::vec3(0));
+  // cam.SetFOV(20);
+  // cam.SetDefocusAngle(0.6);
+  // cam.SetFocusDistance(10);
+  // cam.SetCenter({13, 2, 3});
+  // cam.SetLookAt({0, 0, 0});
+  // cam.SetCenter({-2, 2, 1});
+  // cam.SetLookAt({0, 0, -1});
+  // cam.SetViewUp({0, 1, 0});
+  cam.SetFOV(90);
+  cam.SetDefocusAngle(0);
+  // cam.SetFocusDistance(3.4);
+  cpu_tracer_.camera = &cam;
   OnResize(window.GetWindowSize());
 
   GLuint fbo;
@@ -96,25 +256,19 @@ void App::Run() {
   uint64_t prev_time = 0;
   double dt = 0;
 
-  cpu::Scene scene;
-  auto mat_ground = std::make_shared<cpu::MaterialVariant>(
-      cpu::LambertianMaterial{.albedo = vec3{0.8, 0.8, 0.0}});
-  auto mat_center = std::make_shared<cpu::MaterialVariant>(
-      cpu::LambertianMaterial{.albedo = vec3{0.1, 0.2, 0.5}});
-  auto mat_left = std::make_shared<cpu::MaterialVariant>(
-      cpu::DielectricMaterial{.refraction_index = 1.f / 1.3f});
-  auto mat_right = std::make_shared<cpu::MaterialVariant>(
-      cpu::MetalMaterial{.albedo = vec3{0.8, 0.6, 0.2}, .fuzz = 1.0});
+  auto scene_opt = serialize::LoadScene(GET_PATH("data/scene_touching_spheres.json"));
+  if (!scene_opt.has_value()) {
+    exit(1);
+  }
 
-  scene.spheres.emplace_back(
-      cpu::Sphere{.center = vec3{0, -100.5, -1}, .radius = 100, .material = mat_ground});
-  scene.spheres.emplace_back(
-      cpu::Sphere{.center = vec3{0, 0, -1.2f}, .radius = 0.5, .material = mat_center});
-  scene.spheres.emplace_back(
-      cpu::Sphere{.center = vec3{-1, 0, -1.0}, .radius = 0.5, .material = mat_left});
-  scene.spheres.emplace_back(
-      cpu::Sphere{.center = vec3{1, 0, -1}, .radius = 0.5, .material = mat_right});
+  cpu::Scene& scene = scene_opt.value();
+  // MakeAFinalRenderScene(scene);
+  // serialize::WriteScene(scene, GET_PATH("data/final_render_book_1.json"));
 
+  bool cpu_render = false;
+
+  InitGpuData(data);
+  UploadScene(data, scene);
   while (!window.ShouldClose()) {
     ZoneScoped;
     prev_time = curr_time;
@@ -133,24 +287,67 @@ void App::Run() {
 
     window.PollEvents();
 
-    cpu_tracer_.Update(scene);
+    static bool rendered_once = false;
+    static int frame_count = 0;
+    static bool old_cpu = cpu_render;
+    frame_count++;
+    if (cpu_render) {
+      bool done = (rendered_once && frame_count > app_settings.num_samples);
+      if (!done || !app_settings.render_once) {
+        cpu_tracer_.Update(scene);
+        rendered_once = true;
+      }
+
+      static bool saved = false;
+      if (!saved && done && app_settings.save_after_render_once) {
+        std::string out_path = GET_PATH("output/") + util::CurrentDateTime() + "_render.png";
+        util::WriteImage(output_tex->Id(), 4, out_path);
+        saved = true;
+      }
+    }
 
     window.StartRenderFrame(imgui_enabled);
+
     ImGui::Begin("Settings");
     bool vsync = window.GetVsync();
     if (ImGui::Checkbox("Vsync", &vsync)) {
       window.SetVsync(vsync);
     }
+    static char scene_name[100];
+    static char copy_file_scene_name[100];
+    ImGui::Text("Frame Count %i", frame_count);
+    ImGui::InputText("##Scene Name", scene_name, 100);
+    ImGui::SameLine();
+    ImGui::Checkbox("CPU", &cpu_render);
+    if (ImGui::Button("Load Scene")) {
+      auto scene_opt = serialize::LoadScene(GET_PATH("data/") + std::string(scene_name));
+      if (scene_opt.has_value()) {
+        scene = scene_opt.value();
+        cpu_tracer_.Reset();
+      }
+    }
+    ImGui::InputText("##Copy File Scene Name", copy_file_scene_name, 100);
+    ImGui::SameLine();
+    if (ImGui::Button("Copy Scene To File")) {
+      serialize::WriteScene(scene, GET_PATH("data/") + std::string(copy_file_scene_name));
+    }
     ImGui::End();
+
     cpu_tracer_.OnImGui();
 
     glClearColor(0.1, 0.1, 0.1, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    output_tex->Bind(0);
-    glTextureSubImage2D(output_tex->Id(), 0, 0, 0, viewport_dims.x, viewport_dims.y, GL_RGBA,
-                        GL_UNSIGNED_BYTE, cpu_tracer_.Pixels().data());
-    quad.Draw();
+    if (cpu_render) {
+      output_tex->Bind(0);
+      glTextureSubImage2D(output_tex->Id(), 0, 0, 0, viewport_dims.x, viewport_dims.y, GL_RGBA,
+                          GL_UNSIGNED_BYTE, cpu_tracer_.Pixels().data());
+      quad.Draw();
+    } else {
+      BindGPUData(data);
+      BindAndSetUniforms(cam, scene);
+      quad.Draw();
+    }
 
     window.EndRenderFrame(imgui_enabled);
   }

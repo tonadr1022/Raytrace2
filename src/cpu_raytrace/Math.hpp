@@ -6,18 +6,18 @@
 
 namespace raytrace2::cpu::math {
 
-inline float RandFloat0To1() {
+inline float RandFloat() {
   static std::uniform_real_distribution<float> distribution(0.0, 1.0);
   thread_local static std::minstd_rand generator(std::random_device{}());  // Faster generator
   return distribution(generator);
 }
 
-inline float Randfloat(float min, float max) { return min + RandFloat0To1() * (max - min); }
+inline float RandFloat(float min, float max) { return min + RandFloat() * (max - min); }
 
-inline vec3 RandVec3() { return {RandFloat0To1(), RandFloat0To1(), RandFloat0To1()}; }
+inline vec3 RandVec3() { return {RandFloat(), RandFloat(), RandFloat()}; }
 
 inline vec3 RandVec3(float min, float max) {
-  return {Randfloat(min, max), Randfloat(min, max), Randfloat(min, max)};
+  return {RandFloat(min, max), RandFloat(min, max), RandFloat(min, max)};
 }
 
 inline vec3 RandInUnitSphere() {
@@ -25,6 +25,15 @@ inline vec3 RandInUnitSphere() {
     vec3 p = RandVec3(-1, 1);
     float length_sq = glm::dot(p, p);
     if (1e-160 < length_sq && length_sq <= 1.0) return p;
+  }
+}
+
+inline vec3 RandInUnitDisk() {
+  while (true) {
+    auto p = vec3(RandFloat(-1, 1), RandFloat(-1, 1), 0);
+    if (glm::dot(p, p) < 1.0) {
+      return p;
+    }
   }
 }
 

@@ -2,6 +2,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+// #define LOG 1
 namespace gl {
 
 void Shader::Bind() const {
@@ -16,7 +17,9 @@ void Shader::SetInt(const std::string& name, int value) {
   if (it != uniform_locations_.end()) {
     glUniform1i(it->second, value);
   } else {
+#ifdef LOG
     std::cerr << "uniform not found " << name << '\n';
+#endif
   }
 }
 
@@ -25,7 +28,9 @@ void Shader::SetFloat(const std::string& name, float value) {
   if (it != uniform_locations_.end()) {
     glUniform1f(it->second, value);
   } else {
+#ifdef LOG
     std::cerr << "uniform not found " << name << '\n';
+#endif
   }
 }
 
@@ -34,7 +39,9 @@ void Shader::SetMat4(const std::string& name, const glm::mat4& mat) {
   if (it != uniform_locations_.end()) {
     glUniformMatrix4fv(it->second, 1, GL_FALSE, glm::value_ptr(mat));
   } else {
+#ifdef LOG
     std::cerr << "uniform not found " << name << '\n';
+#endif
   }
 }
 
@@ -43,7 +50,9 @@ void Shader::SetIVec2(const std::string& name, const glm::ivec2& vec) {
   if (it != uniform_locations_.end()) {
     glUniform2i(it->second, vec[0], vec[1]);
   } else {
+#ifdef LOG
     std::cerr << "uniform not found " << name << '\n';
+#endif
   }
 }
 
@@ -52,7 +61,9 @@ void Shader::SetIVec3(const std::string& name, const glm::ivec3& vec) {
   if (it != uniform_locations_.end()) {
     glUniform3iv(it->second, 1, glm::value_ptr(vec));
   } else {
+#ifdef LOG
     std::cerr << "uniform not found " << name << '\n';
+#endif
   }
 }
 
@@ -61,7 +72,9 @@ void Shader::SetVec3(const std::string& name, const glm::vec3& vec) {
   if (it != uniform_locations_.end()) {
     glUniform3fv(it->second, 1, glm::value_ptr(vec));
   } else {
+#ifdef LOG
     std::cerr << "uniform not found " << name << '\n';
+#endif
   }
 }
 
@@ -70,7 +83,9 @@ void Shader::SetVec2(const std::string& name, const glm::vec2& vec) {
   if (it != uniform_locations_.end()) {
     glUniform2fv(it->second, 1, glm::value_ptr(vec));
   } else {
+#ifdef LOG
     std::cerr << "uniform not found " << name << '\n';
+#endif
   }
 }
 
@@ -79,7 +94,9 @@ void Shader::SetVec4(const std::string& name, const Float4Arr& vec) {
   if (it != uniform_locations_.end()) {
     glUniform4fv(it->second, 1, vec);
   } else {
+#ifdef LOG
     std::cerr << "uniform not found " << name << '\n';
+#endif
   }
 }
 
@@ -88,7 +105,9 @@ void Shader::SetVec4(const std::string& name, const glm::vec4& vec) {
   if (it != uniform_locations_.end()) {
     glUniform4fv(it->second, 1, glm::value_ptr(vec));
   } else {
+#ifdef LOG
     std::cerr << "uniform not found " << name << '\n';
+#endif
   }
 }
 
@@ -97,7 +116,9 @@ void Shader::SetMat3(const std::string& name, const glm::mat3& mat, bool transpo
   if (it != uniform_locations_.end()) {
     glUniformMatrix3fv(it->second, 1, static_cast<GLboolean>(transpose), glm::value_ptr(mat));
   } else {
+#ifdef LOG
     std::cerr << "uniform not found " << name << '\n';
+#endif
   }
 }
 
@@ -106,7 +127,9 @@ void Shader::SetFloatArr(const std::string& name, GLuint count, const GLfloat* v
   if (it != uniform_locations_.end()) {
     glUniform1fv(it->second, count, value);
   } else {
+#ifdef LOG
     std::cerr << "uniform not found " << name << '\n';
+#endif
   }
 }
 
@@ -115,7 +138,9 @@ void Shader::SetBool(const std::string& name, bool value) {
   if (it != uniform_locations_.end()) {
     glUniform1i(it->second, static_cast<GLint>(value));
   } else {
+#ifdef LOG
     std::cerr << "uniform not found " << name << '\n';
+#endif
   }
 }
 

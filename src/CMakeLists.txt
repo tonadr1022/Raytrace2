@@ -6,6 +6,8 @@ set(SOURCES
     Window.cpp
     EAssert.cpp
     pch.cpp
+    Serialize.cpp
+    Util.cpp
     gl/Texture.cpp
     gl/Shader.cpp
     gl/ShaderManager.cpp
@@ -29,6 +31,8 @@ endif()
 add_compile_definitions(SRC_PATH="${CMAKE_SOURCE_DIR}")
 target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/pch.hpp)
 
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_HOME_DIRECTORY}/dep)
+
 
 # For std::execution::par
 find_package(TBB REQUIRED)
@@ -40,5 +44,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     imgui::imgui
     GLEW::GLEW
     glm::glm
+    nlohmann_json::nlohmann_json
     Tracy::TracyClient
 )

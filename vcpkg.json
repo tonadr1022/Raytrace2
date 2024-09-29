@@ -4,6 +4,7 @@
     "glm",
     "tracy",
     "sdl2",
+    "nlohmann-json",
     {
       "name": "imgui",
       "features": ["opengl3-binding", "sdl2-binding"]

@@ -1,0 +1,59 @@
+{
+  "materials": [
+    {
+      "albedo": [0.800000011920929, 0.800000011920929, 0.0],
+      "id": 0,
+      "type": "lambertian"
+    },
+    {
+      "albedo": [0.10000000149011612, 0.20000000298023224, 0.30000001192092896],
+      "id": 1,
+      "type": "lambertian"
+    },
+    {
+      "id": 2,
+      "refraction_index": 1.5,
+      "type": "dielectric"
+    },
+    {
+      "id": 3,
+      "refraction_index": 0.6666666865348816,
+      "type": "dielectric"
+    },
+    {
+      "albedo": [0.800000011920929, 0.6000000238418579, 0.20000000298023224],
+      "fuzz": 1.0,
+      "id": 4,
+      "type": "metal"
+    }
+  ],
+  "primitives": {
+    "spheres": [
+      {
+        "center": [0.0, -100.5, -1.0],
+        "material_id": 0,
+        "radius": 100.0
+      },
+      {
+        "center": [0.0, 0.0, -1.2000000476837158],
+        "material_id": 1,
+        "radius": 0.5
+      },
+      {
+        "center": [-1.0, 0.0, -1.0],
+        "material_id": 2,
+        "radius": 0.5
+      },
+      {
+        "center": [-1.0, 0.0, -1.0],
+        "material_id": 3,
+        "radius": 0.4000000059604645
+      },
+      {
+        "center": [1.0, 0.0, -1.0],
+        "material_id": 4,
+        "radius": 0.5
+      }
+    ]
+  }
+}

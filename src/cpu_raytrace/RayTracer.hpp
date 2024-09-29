@@ -15,13 +15,13 @@ class Camera;
 
 using PixelArray = std::vector<color>;
 template <typename T>
-bool HitAny(std::span<T const> hitabbles, const cpu::Ray& r, cpu::Interval ray_t,
-            cpu::HitRecord& rec) {
+bool HitAny(const Scene& scene, std::span<T const> hitabbles, const cpu::Ray& r,
+            cpu::Interval ray_t, cpu::HitRecord& rec) {
   cpu::HitRecord temp_rec;
   bool hit_any = false;
 
   for (const T& hittable : hitabbles) {
-    if (hittable.Hit(r, ray_t, temp_rec)) {
+    if (hittable.Hit(scene, r, ray_t, temp_rec)) {
       hit_any = true;
       ray_t.max = temp_rec.t;
       rec = temp_rec;
@@ -36,7 +36,7 @@ struct RayTracer {
 
   void OnResize(glm::ivec2 dims) {
     dims_ = dims;
-    camera.SetDims(dims);
+    camera->SetDims(dims);
     frame_idx_ = 0;
 
     size_t new_size = static_cast<size_t>(dims.x) * dims.y;
@@ -50,6 +50,7 @@ struct RayTracer {
         iter_[i] = {x, y, i};
       }
     }
+    Reset();
   }
 
   [[nodiscard]] inline const gl::Texture& GetTex() const { return output_tex_; }
@@ -58,11 +59,11 @@ struct RayTracer {
 
   bool OnEvent(const SDL_Event& event);
   void OnImGui();
+  void Reset();
 
-  Camera camera;
+  Camera* camera{nullptr};
 
  private:
-  void Reset();
   gl::Texture output_tex_;
   PixelArray pixels_;
   size_t frame_idx_{0};
