@@ -222,7 +222,6 @@ void BindAndSetUniforms(cpu::Camera& cam, const cpu::Scene& scene) {
 void App::Run() {
   AppSettings app_settings = serialize::LoadAppSettings(GET_PATH("data/settings.json"));
   Window window{1600, 900, "raytrace_2", [this](SDL_Event& event) { OnEvent(event); }};
-
   gl::ShaderManager::Init();
   gl::ShaderManager::Get().AddShader(
       "textured_quad", {{GET_SHADER_PATH("textured_quad.vs.glsl"), gl::ShaderType::kVertex, {}},
@@ -236,18 +235,19 @@ void App::Run() {
 
   Quad quad;
   quad.Init();
-  cam.SetCenter({0, 0, 1});
-  cam.SetLookAt({0, 0, 0});
-  // cam.SetFOV(20);
-  // cam.SetDefocusAngle(0.6);
-  // cam.SetFocusDistance(10);
-  // cam.SetCenter({13, 2, 3});
+  // cam.SetCenter({0, 0, 1});
   // cam.SetLookAt({0, 0, 0});
+  // TODO: put these params in json
+  cam.SetFOV(20);
+  cam.SetDefocusAngle(10);
+  cam.SetFocusDistance(3.4);
+  cam.SetCenter({-2, 2, 1});
+  cam.SetLookAt({0, 0, -1});
   // cam.SetCenter({-2, 2, 1});
   // cam.SetLookAt({0, 0, -1});
   // cam.SetViewUp({0, 1, 0});
-  cam.SetFOV(90);
-  cam.SetDefocusAngle(0);
+  // cam.SetFOV(90);
+  // cam.SetDefocusAngle(0);
   // cam.SetFocusDistance(3.4);
   cpu_tracer_.camera = &cam;
   OnResize(window.GetWindowSize());
@@ -262,7 +262,7 @@ void App::Run() {
   uint64_t prev_time = 0;
   double dt = 0;
 
-  auto scene_opt = serialize::LoadScene(GET_PATH("data/scene_touching_spheres.json"));
+  auto scene_opt = serialize::LoadScene(GET_PATH("data/scene2.json"));
   if (!scene_opt.has_value()) {
     exit(1);
   }
@@ -299,9 +299,9 @@ void App::Run() {
     if (cpu_render) {
       bool done = (rendered_once && frame_count > app_settings.num_samples);
       if (!done || !app_settings.render_once) {
-        cpu_tracer_.Update(scene);
         rendered_once = true;
       }
+      cpu_tracer_.Update(scene);
 
       static bool saved = false;
       if (!saved && done && app_settings.save_after_render_once) {

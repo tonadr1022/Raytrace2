@@ -35,6 +35,11 @@
         "radius": 100.0
       },
       {
+        "center": [0.0, 0.0, -1.2000000476837158],
+        "material_id": 1,
+        "radius": 0.5
+      },
+      {
         "center": [-1.0, 0.0, -1.0],
         "material_id": 2,
         "radius": 0.5
