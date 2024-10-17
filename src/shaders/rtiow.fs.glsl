@@ -11,10 +11,12 @@ uniform vec3 cam_center;
 // uniform vec3 cam_lookat;
 uniform vec3 defocus_disk_u;
 uniform vec3 defocus_disk_v;
-uniform float num_spheres;
+uniform vec3 viewport_upper_left;
+uniform int num_spheres;
 uniform int max_depth = 10;
 
 out vec4 o_color;
+in vec2 tex_coords;
 
 struct Sphere {
     vec3 center;
@@ -129,7 +131,9 @@ struct HitRecord {
 };
 
 Ray GetRay(vec2 uv) {
-    vec3 pixel_center = pixel00_loc + gl_FragCoord.x * pixel_delta_u + gl_FragCoord.y * pixel_delta_v;
+    // pixel center in world space
+    // how to get pixel00_loc
+    vec3 pixel_center = pixel00_loc + gl_FragCoord.x + gl_FragCoord.y;
     float px = -0.5 + randFromSeed(1);
     float py = -0.5 + randFromSeed(2);
     vec3 pixel_sample_square = vec3(px * pixel_delta_u.x, py * pixel_delta_v.y, 0.0);
@@ -284,15 +288,26 @@ vec3 RayColor(Ray r, int depth, vec2 seed) {
     }
     return attenuation;
 }
-
 void main() {
-    vec2 uv = gl_FragCoord.xy / resolution.xy;
-    Ray ray = GetRay(uv);
-    o_color = vec4(vec3(abs(spheres[1].center.x)), 1.0);
-    return;
-    // o_color = vec4((ray.direction + 1.0) * 0.5, 1.0);
-    // return;
-    vec3 ray_color = RayColor(ray, max_depth, uv);
-    vec3 gamma_corrected = pow(ray_color, vec3(1.0 / 2.2));
-    o_color = vec4(gamma_corrected, 1.0);
+    // Get pixel coordinate
+    vec2 pixel_coord = vec2(gl_FragCoord.x - 0.5, gl_FragCoord.y - 0.5);
+
+    // Compute pixel center in world space
+    vec3 pixel_center = viewport_upper_left
+            + pixel_coord.x * pixel_delta_u
+            + pixel_coord.y * pixel_delta_v;
+    // pixel_center = pixel00_loc + gl_FragCoord.x * pixel_delta_u + gl_FragCoord.y * pixel_delta_v;
+
+    // Now, pixel_center is the world-space position of the fragment
+    // You can use this to calculate rays, lighting, etc.
+
+    // Example output color based on pixel world position (for testing)
+    o_color = vec4(pixel_center * 0.1, 1.0); // Scale it for visualization
 }
+// void main() {
+//     // vec2 uv = gl_FragCoord.xy / resolution.xy;
+//     Ray ray = GetRay(tex_coords);
+//     vec3 ray_color = RayColor(ray, max_depth, tex_coords);
+//     vec3 gamma_corrected = pow(ray_color, vec3(1.0 / 2.2));
+//     o_color = vec4(gamma_corrected, 1.0);
+// }

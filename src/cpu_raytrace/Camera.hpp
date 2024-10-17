@@ -92,8 +92,8 @@ class Camera {
   [[nodiscard]] inline float GetFOV() const { return vfov_; }
   [[nodiscard]] inline const glm::ivec2& GetDims() const { return dims_; }
 
-  vec3 lookat_{0, 0, -1};
   vec3 center_{0, 0, 0};
+  vec3 lookat_{0, 0, -1};
   vec3 view_up_{0, 1, 0};
   vec3 viewport_upper_left_;
   vec3 pixel00_loc_;

@@ -4,10 +4,17 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wall"
+#pragma clang diagnostic ignored "-Wextra"
+
+// Code that triggers warnings
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image/stb_image.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image/stb_image_write.h>
+
+#pragma clang diagnostic pop
 
 namespace raytrace2::util {
 
@@ -30,7 +37,6 @@ void WriteJson(nlohmann::json& obj, const std::string& path) {
 }
 
 void WriteImage(uint32_t tex, uint32_t num_channels, const std::string& out_path) {
-  std::cout << "writing image\n";
   stbi_flip_vertically_on_write(true);
   int w, h;
   int mip_level = 0;

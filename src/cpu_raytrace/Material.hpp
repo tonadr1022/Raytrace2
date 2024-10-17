@@ -14,18 +14,18 @@ struct Material {
   }
 };
 
-struct MaterialMetal : public Material<MaterialMetal> {
+struct alignas(16) MaterialMetal : public Material<MaterialMetal> {
   vec3 albedo;
   float fuzz{0};
   bool Scatter(const Ray& r_in, const HitRecord& rec, vec3& attenuation, Ray& scattered) const;
 };
 
-struct MaterialDielectric : public Material<MaterialMetal> {
+struct alignas(16) MaterialDielectric : public Material<MaterialMetal> {
   float refraction_index;
   bool Scatter(const Ray& r_in, const HitRecord& rec, vec3& attenuation, Ray& scattered) const;
 };
 
-struct MaterialLambertian : public Material<MaterialLambertian> {
+struct alignas(16) MaterialLambertian : public Material<MaterialLambertian> {
   vec3 albedo;
 };
 

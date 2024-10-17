@@ -9,6 +9,7 @@ vcpkg
 .vs
 resources/icons
 resources/worlds/**
+output
 
 imgui.ini
 
