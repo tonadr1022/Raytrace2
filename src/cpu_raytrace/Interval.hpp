@@ -4,11 +4,13 @@
 namespace raytrace2::cpu {
 
 struct Interval {
-  float min{-kInfinity}, max{kInfinity};
+  // default is empty
+  float min{kInfinity}, max{-kInfinity};
   [[nodiscard]] float Size() const { return max - min; }
 
   [[nodiscard]] bool Contains(float x) const { return min <= x && x <= max; }
   [[nodiscard]] bool Surrounds(float x) const { return min < x && x < max; }
+  [[nodiscard]] Interval Expand(float delta) const;
 
   static const Interval kEmpty;
   static const Interval kUniverse;

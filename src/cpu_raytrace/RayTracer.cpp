@@ -20,13 +20,15 @@ color ToColor(const vec3& col) {
 }
 
 float col = 0.5f;
-vec3 RayColor(const cpu::Ray& r, int depth, const cpu::Scene& scene) {
+vec3 RayColor(const cpu::Ray& r, int depth, const Scene& scene) {
   vec3 attenutation{1};
   Ray scattered = r;
   while (depth > 0) {
     cpu::HitRecord rec;
-    bool hit_any_sphere = HitAny(scene, std::span<cpu::Sphere const>(scene.spheres), scattered,
-                                 cpu::Interval{0.001, kInfinity}, rec);
+    bool hit_any_sphere =
+        scene.hittable_list.Hit(scene, scattered, cpu::Interval{0.001, kInfinity}, rec);
+    // bool hit_any_sphere = HitAny(scene, std::span<cpu::Sphere const>(scene.spheres), scattered,
+    //                              cpu::Interval{0.001, kInfinity}, rec);
     if (hit_any_sphere) {
       vec3 local_attenuation;
       EASSERT(rec.material != nullptr);

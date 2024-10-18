@@ -5,7 +5,8 @@
 
 namespace raytrace2::cpu {
 bool Sphere::Hit(const Scene& scene, const Ray& r, Interval ray_t, HitRecord& rec) const {
-  vec3 oc = center - r.origin;
+  auto curr_center = center_displacement.At(r.time);
+  vec3 oc = curr_center - r.origin;
   auto a = glm::dot(r.direction, r.direction);
   auto h = glm::dot(r.direction, oc);
   auto c = glm::dot(oc, oc) - radius * radius;
@@ -27,7 +28,7 @@ bool Sphere::Hit(const Scene& scene, const Ray& r, Interval ray_t, HitRecord& re
   rec.t = root;
   rec.point = r.At(rec.t);
   rec.material = &scene.materials[material_handle];
-  rec.SetFaceNormal(r, (rec.point - center) / radius);
+  rec.SetFaceNormal(r, (rec.point - curr_center) / radius);
 
   return true;
 }

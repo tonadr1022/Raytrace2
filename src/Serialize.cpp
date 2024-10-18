@@ -6,8 +6,11 @@
 #include "Defs.hpp"
 #include "Settings.hpp"
 #include "Util.hpp"
+#include "cpu_raytrace/BVH.hpp"
 #include "cpu_raytrace/Fwd.hpp"
+#include "cpu_raytrace/HittableList.hpp"
 #include "cpu_raytrace/Material.hpp"
+#include "cpu_raytrace/Ray.hpp"
 #include "cpu_raytrace/Scene.hpp"
 #include "cpu_raytrace/Sphere.hpp"
 
@@ -88,13 +91,16 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
 
   for (const nlohmann::json& json_sphere : json_spheres) {
     std::array<float, 3> center = json_sphere.value("center", std::array<float, 3>{0, 0, 0});
+    std::array<float, 3> displacement =
+        json_sphere.value("displacement", std::array<float, 3>{0, 0, 0});
     float radius = json_sphere.value("radius", 0.5);
-    scene.spheres.emplace_back(
-        cpu::Sphere{.center = vec3{center[0], center[1], center[2]},
-                    .radius = radius,
-                    .material_handle = id_to_arr_idx[json_sphere.value("material_id", 0)]});
+    scene.hittable_list.Add(
+        std::make_shared<cpu::Sphere>(vec3{center[0], center[1], center[2]},
+                                      vec3{displacement[0], displacement[1], displacement[2]},
+                                      radius, id_to_arr_idx[json_sphere.value("material_id", 0)]));
   }
 
+  scene.hittable_list = cpu::HittableList{std::make_shared<cpu::BVHNode>(scene.hittable_list)};
   return scene;
 }
 
@@ -131,11 +137,16 @@ void WriteScene(const cpu::Scene& scene, const std::string& filepath) {
     i++;
   }
 
-  for (const auto& sphere : scene.spheres) {
-    nlohmann::json json_sphere = {{"center", ToVec3Arr(sphere.center)},
-                                  {"radius", sphere.radius},
-                                  {"material_id", sphere.material_handle}};
-    spheres.push_back(json_sphere);
+  for (const auto& sphere : scene.hittable_list.objects) {
+    std::shared_ptr<cpu::Sphere> sphere_ptr = std::dynamic_pointer_cast<cpu::Sphere>(sphere);
+    if (sphere_ptr) {
+      nlohmann::json json_sphere = {
+          {"center", ToVec3Arr(sphere_ptr->center_displacement.origin)},
+          {"displacement", ToVec3Arr(sphere_ptr->center_displacement.direction)},
+          {"radius", sphere_ptr->radius},
+          {"material_id", sphere_ptr->material_handle}};
+      spheres.push_back(json_sphere);
+    }
   }
   obj["primitives"] = {{"spheres", spheres}};
   obj["materials"] = materials;

@@ -14,6 +14,9 @@ inline float RandFloat() {
 
 inline float RandFloat(float min, float max) { return min + RandFloat() * (max - min); }
 
+// inclusive of min, inclusive of max
+inline int RandInt(int min, int max) { return static_cast<int>(RandFloat(min, max + 1)); }
+
 inline vec3 RandVec3() { return {RandFloat(), RandFloat(), RandFloat()}; }
 
 inline vec3 RandVec3(float min, float max) {

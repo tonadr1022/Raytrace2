@@ -2,10 +2,9 @@
 
 #include <SDL_events.h>
 
+#include "BVH.hpp"
+#include "Sphere.hpp"
 #include "cpu_raytrace/Camera.hpp"
-#include "cpu_raytrace/HitRecord.hpp"
-#include "cpu_raytrace/Interval.hpp"
-#include "cpu_raytrace/Ray.hpp"
 #include "gl/Texture.hpp"
 
 namespace raytrace2::cpu {
@@ -14,22 +13,6 @@ struct Scene;
 class Camera;
 
 using PixelArray = std::vector<color>;
-template <typename T>
-bool HitAny(const Scene& scene, std::span<T const> hitabbles, const cpu::Ray& r,
-            cpu::Interval ray_t, cpu::HitRecord& rec) {
-  cpu::HitRecord temp_rec;
-  bool hit_any = false;
-
-  for (const T& hittable : hitabbles) {
-    if (hittable.Hit(scene, r, ray_t, temp_rec)) {
-      hit_any = true;
-      ray_t.max = temp_rec.t;
-      rec = temp_rec;
-    }
-  }
-
-  return hit_any;
-}
 
 struct RayTracer {
   void Update(const Scene& scene);

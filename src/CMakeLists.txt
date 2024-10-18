@@ -16,13 +16,16 @@ set(SOURCES
     cpu_raytrace/Interval.cpp
     cpu_raytrace/RayTracer.cpp
     cpu_raytrace/Material.cpp
+    cpu_raytrace/Scene.cpp
+    cpu_raytrace/BVH.cpp
+    cpu_raytrace/HittableList.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Werror)
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Werror -pedantic)
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
     endif()

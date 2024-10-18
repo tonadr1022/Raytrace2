@@ -9,7 +9,7 @@ bool Scatter(const MaterialMetal& mat, const Ray& r_in, const HitRecord& rec, ve
              Ray& scattered) {
   vec3 reflected =
       glm::normalize(math::Reflect(r_in.direction, rec.normal)) + (mat.fuzz * math::RandUnitVec3());
-  scattered = Ray{.origin = rec.point, .direction = reflected};
+  scattered = Ray{.origin = rec.point, .direction = reflected, .time = r_in.time};
   attenuation = mat.albedo;
   return true;
 }
@@ -38,17 +38,17 @@ bool Scatter(const MaterialDielectric& mat, const Ray& r_in, const HitRecord& re
   } else {
     direction = math::Refract(unit_dir, rec.normal, ri);
   }
-  scattered = Ray{.origin = rec.point, .direction = direction};
+  scattered = Ray{.origin = rec.point, .direction = direction, .time = r_in.time};
   return true;
 }
 
-bool Scatter(const MaterialLambertian& mat, const Ray&, const HitRecord& rec, vec3& attenuation,
-             Ray& scattered) {
+bool Scatter(const MaterialLambertian& mat, const Ray& r_in, const HitRecord& rec,
+             vec3& attenuation, Ray& scattered) {
   vec3 scattered_dir = rec.normal + math::RandUnitVec3();
   if (math::NearZero(scattered_dir)) {
     scattered_dir = rec.normal;
   }
-  scattered = Ray{.origin = rec.point, .direction = scattered_dir};
+  scattered = Ray{.origin = rec.point, .direction = scattered_dir, .time = r_in.time};
   attenuation = mat.albedo;
   return true;
 }
