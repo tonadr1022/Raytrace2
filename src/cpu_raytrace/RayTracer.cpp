@@ -32,7 +32,7 @@ vec3 RayColor(const cpu::Ray& r, int depth, const Scene& scene) {
     if (hit_any_sphere) {
       vec3 local_attenuation;
       EASSERT(rec.material != nullptr);
-      if (Scatter(*rec.material, scattered, rec, local_attenuation, scattered)) {
+      if (Scatter(scene.textures, *rec.material, scattered, rec, local_attenuation, scattered)) {
         attenutation *= local_attenuation;
       } else {
         // no scatter, so absorb the ray

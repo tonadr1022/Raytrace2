@@ -5,7 +5,16 @@ namespace raytrace2::cpu {
 struct MaterialMetal;
 struct MaterialLambertian;
 struct MaterialDielectric;
+struct MaterialTexture;
 
-using MaterialVariant = std::variant<MaterialMetal, MaterialLambertian, MaterialDielectric>;
+using MaterialVariant =
+    std::variant<MaterialMetal, MaterialLambertian, MaterialDielectric, MaterialTexture>;
+
+namespace texture {
+struct SolidColor;
+struct Checker;
+using TextureVariant = std::variant<SolidColor, Checker>;
+using TexArray = std::vector<TextureVariant>;
+}  // namespace texture
 
 }  // namespace raytrace2::cpu

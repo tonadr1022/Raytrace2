@@ -9,6 +9,7 @@ namespace raytrace2::cpu {
 struct HitRecord {
   vec3 point;
   vec3 normal;
+  vec2 uv;
   float t;
   const MaterialVariant* material{};
   bool front_face;

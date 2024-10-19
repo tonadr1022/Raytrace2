@@ -25,18 +25,24 @@ struct alignas(16) MaterialDielectric : public Material<MaterialMetal> {
   bool Scatter(const Ray& r_in, const HitRecord& rec, vec3& attenuation, Ray& scattered) const;
 };
 
+struct alignas(16) MaterialTexture : public Material<MaterialLambertian> {
+  uint32_t tex_idx;
+};
 struct alignas(16) MaterialLambertian : public Material<MaterialLambertian> {
   vec3 albedo;
 };
 
-bool Scatter(const MaterialLambertian& mat, const Ray& r_in, const HitRecord& rec,
-             vec3& attenuation, Ray& scattered);
-bool Scatter(const MaterialDielectric& mat, const Ray& r_in, const HitRecord& rec,
-             vec3& attenuation, Ray& scattered);
-bool Scatter(const MaterialMetal& mat, const Ray& r_in, const HitRecord& rec, vec3& attenuation,
-             Ray& scattered);
+bool Scatter(const texture::TexArray&, const MaterialTexture& mat, const Ray& r_in,
+             const HitRecord& rec, vec3& attenuation, Ray& scattered);
+bool Scatter(const texture::TexArray&, const MaterialLambertian& mat, const Ray& r_in,
+             const HitRecord& rec, vec3& attenuation, Ray& scattered);
+bool Scatter(const texture::TexArray&, const MaterialDielectric& mat, const Ray& r_in,
+             const HitRecord& rec, vec3& attenuation, Ray& scattered);
+bool Scatter(const texture::TexArray&, const MaterialMetal& mat, const Ray& r_in,
+             const HitRecord& rec, vec3& attenuation, Ray& scattered);
 
-[[nodiscard]] extern bool Scatter(const MaterialVariant& mat, const Ray& ray, const HitRecord& rec,
-                                  vec3& attenutation, Ray& scattered);
+[[nodiscard]] extern bool Scatter(const texture::TexArray&, const MaterialVariant& mat,
+                                  const Ray& ray, const HitRecord& rec, vec3& attenutation,
+                                  Ray& scattered);
 
 }  // namespace raytrace2::cpu

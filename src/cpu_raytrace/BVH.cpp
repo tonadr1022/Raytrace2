@@ -1,5 +1,6 @@
 #include "BVH.hpp"
 
+#include "Defs.hpp"
 #include "Scene.hpp"
 #include "Sphere.hpp"
 #include "cpu_raytrace/Math.hpp"
@@ -11,6 +12,12 @@ BVHNode::BVHNode(std::vector<std::shared_ptr<Hittable>>& objects, size_t start, 
   std::array<Comparator, 3> comparators = {BoxCompareX, BoxCompareY, BoxCompareZ};
   int axis_idx = math::RandInt(0, 2);
   size_t object_span = end - start;
+  aabb_.min = glm::vec3{kInfinity};
+  aabb_.max = glm::vec3{-kInfinity};
+  for (size_t object_idx = start; object_idx < end; object_idx++) {
+    aabb_ = AABB{aabb_, objects[object_idx]->GetAABB()};
+  }
+  int axis = aabb_.LongestAxis();
   if (object_span == 1) {
     left_ = objects[start];
     right_ = objects[start];
@@ -23,7 +30,6 @@ BVHNode::BVHNode(std::vector<std::shared_ptr<Hittable>>& objects, size_t start, 
     left_ = std::make_shared<BVHNode>(objects, start, mid);
     right_ = std::make_shared<BVHNode>(objects, mid, end);
   }
-  aabb_ = AABB{left_->GetAABB(), right_->GetAABB()};
 }
 
 bool BVHNode::BoxCompare(const std::shared_ptr<Hittable>& a, const std::shared_ptr<Hittable>& b,

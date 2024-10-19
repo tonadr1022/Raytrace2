@@ -31,7 +31,15 @@ class AABB {
     return true;
   }
 
+  [[nodiscard]] int LongestAxis() const {
+    float x_size = max.x - min.x;
+    float y_size = max.y - min.y;
+    float z_size = max.z - min.z;
+    if (x_size > y_size) {
+      return x_size > z_size ? 0 : 2;
+    }
+    return y_size > z_size ? 1 : 2;
+  }
   vec3 min{kInfinity}, max{-kInfinity};
 };
-
 }  // namespace raytrace2::cpu

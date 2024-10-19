@@ -15,6 +15,7 @@
 #include "cpu_raytrace/Ray.hpp"
 #include "cpu_raytrace/Scene.hpp"
 #include "cpu_raytrace/Sphere.hpp"
+#include "cpu_raytrace/Texture.hpp"
 
 namespace raytrace2::serialize {
 
@@ -61,15 +62,34 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
   auto primitives = obj["primitives"];
   auto json_spheres = primitives["spheres"];
 
+  auto print_scene_error = [&](const std::string& str) {
+    std::cerr << "Failed to parse Scene: " << str << ". " << filepath << '\n';
+  };
+
   nlohmann::json::array_t json_materials = obj["materials"];
+  auto json_textures = obj["textures"];
   size_t num_materials = json_materials.size();
+
+  if (json_textures.is_array()) {
+    size_t num_textures = json_textures.size();
+    for (const nlohmann::json& json_mat : json_textures) {
+      std::string type = json_mat.value("type", "");
+      cpu::texture::TextureVariant tex;
+      if (type == "solid_color") {
+        tex = cpu::texture::SolidColor{
+            .albedo = ToVec3(json_mat.value("albedo", std::array<float, 3>{1, 1, 1}))};
+      } else if (type == "checker") {
+        tex = cpu::texture::Checker{1, json_mat.value("even_tex_idx", 0u),
+                                    json_mat.value("odd_tex_idx", 0u)};
+      } else {
+        print_scene_error("Invalid texture type: " + type);
+      }
+      scene.textures.emplace_back(tex);
+    }
+  }
 
   std::unordered_map<size_t, uint32_t> id_to_arr_idx;
   for (const nlohmann::json& json_mat : json_materials) {
-    auto print_scene_error = [&](const std::string& str) {
-      std::cerr << "Failed to parse Scene: " << str << ". " << filepath << '\n';
-    };
-
     size_t id = json_mat.value("id", std::numeric_limits<size_t>::max());
     if (id == std::numeric_limits<size_t>::max()) {
       print_scene_error("material id not found");
@@ -90,13 +110,16 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
     if (type == "lambertian") {
       mat = cpu::MaterialLambertian{
           .albedo = ToVec3(json_mat.value("albedo", std::array<float, 3>{1, 1, 1}))};
-
     } else if (type == "dielectric") {
       mat = cpu::MaterialDielectric{.refraction_index = json_mat.value("refraction_index", 1.0f)};
     } else if (type == "metal") {
       mat = cpu::MaterialMetal{
           .albedo = ToVec3(json_mat.value("albedo", std::array<float, 3>{1, 1, 1})),
           .fuzz = json_mat.value("fuzz", 0.0f)};
+    } else if (type == "texture") {
+      mat = cpu::MaterialTexture{.tex_idx = json_mat.value("tex_idx", 0u)};
+    } else {
+      print_scene_error("Invalid material type");
     }
     id_to_arr_idx[id] = scene.materials.size();
     scene.materials.emplace_back(mat);
@@ -124,6 +147,19 @@ nlohmann::json::object_t Serialize(const cpu::MaterialDielectric& mat) {
 
 nlohmann::json::object_t Serialize(const cpu::MaterialLambertian& mat) {
   return {{"albedo", ToVec3Arr(mat.albedo)}, {"type", "lambertian"}};
+}
+
+nlohmann::json::object_t Serialize(const cpu::texture::Checker& mat) {
+  return {{"even_tex_idx", mat.even_tex_idx},
+          {"odd_tex_idx", mat.odd_tex_idx},
+          {"scale", 1.f / mat.inv_scale}};
+}
+nlohmann::json::object_t Serialize(const cpu::texture::SolidColor& mat) {
+  return {{"albedo", ToVec3Arr(mat.albedo)}};
+}
+
+nlohmann::json::object_t Serialize(const cpu::MaterialTexture& mat) {
+  return {{"tex_idx", mat.tex_idx}};
 }
 
 nlohmann::json::object_t Serialize(const cpu::MaterialMetal& mat) {
