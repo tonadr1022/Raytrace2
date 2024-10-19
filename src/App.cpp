@@ -196,7 +196,7 @@ void App::Run() {
   MakeAFinalRenderScene(scene_opt.value());
   // serialize::WriteScene(scene_opt.value(), GET_PATH("data/final_render_scene_blur.json"));
   cpu::Scene& scene = scene_opt.value();
-  // MakeAFinalRenderScene(scene);
+  scene.hittable_list = cpu::HittableList{std::make_shared<cpu::BVHNode>(scene.hittable_list)};
   // serialize::WriteScene(scene, GET_PATH("data/final_render_book_1.json"));
 
   bool cpu_render = true;

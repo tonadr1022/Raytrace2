@@ -33,13 +33,6 @@ class AABB {
     return true;
   }
 
-  [[nodiscard]] AABB Merge(const AABB& a, const AABB& b) const {
-    return {
-        {glm::min(a.min, b.min)},
-        {glm::max(a.max, b.max)},
-    };
-  }
-
   vec3 min{kInfinity}, max{-kInfinity};
 };
 

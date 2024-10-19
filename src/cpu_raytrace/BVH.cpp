@@ -44,9 +44,6 @@ bool BVHNode::BoxCompareZ(const std::shared_ptr<Hittable>& a, const std::shared_
 bool BVHNode::Hit(const Scene& scene, const Ray& r, Interval ray_t, HitRecord& rec) const {
   if (!aabb_.Hit(r, ray_t)) return false;
   static int i = 0;
-  if (i++ == 0) {
-    std::cout << "node\n";
-  }
   bool hit_left = left_->Hit(scene, r, ray_t, rec);
   bool hit_right = right_->Hit(scene, r, Interval{ray_t.min, hit_left ? rec.t : ray_t.max}, rec);
   return hit_left || hit_right;
