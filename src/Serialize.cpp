@@ -4,9 +4,11 @@
 #include <nlohmann/json.hpp>
 
 #include "Defs.hpp"
+#include "Paths.hpp"
 #include "Settings.hpp"
 #include "Util.hpp"
 #include "cpu_raytrace/BVH.hpp"
+#include "cpu_raytrace/Camera.hpp"
 #include "cpu_raytrace/Fwd.hpp"
 #include "cpu_raytrace/HittableList.hpp"
 #include "cpu_raytrace/Material.hpp"
@@ -21,15 +23,23 @@ vec3 ToVec3(const std::array<float, 3>& arr) { return {arr[0], arr[1], arr[2]}; 
 std::array<float, 3> ToVec3Arr(const vec3& vec) { return {vec[0], vec[1], vec[2]}; }
 }  // namespace
 
-CameraSettings LoadCameraSettings(const std::string& filepath) {
+cpu::Camera LoadCamera(const std::string& filepath) {
   nlohmann::json obj = util::LoadJsonFile(filepath);
-  CameraSettings settings{.fov = obj.value("fov", 90.f)};
-  return settings;
+  cpu::Camera cam;
+  cam.SetFOV(obj.value("fov", 90));
+  cam.SetCenter(ToVec3(obj.value("center", std::array<float, 3>({0, 0, 1}))));
+  cam.SetLookAt(ToVec3(obj.value("look_at", std::array<float, 3>({0, 0, 0}))));
+  cam.SetDefocusAngle(obj.value("defocus_angle", 0.0f));
+  cam.SetFocusDistance(obj.value("focus_distance", 1.f));
+  return cam;
 }
 
-void WriteCameraSettings(const CameraSettings& settings, const std::string& filepath) {
-  nlohmann::json obj;
-  obj["fov"] = settings.fov;
+void WriteCamera(const cpu::Camera& cam, const std::string& filepath) {
+  nlohmann::json obj = {{"fov", cam.vfov_},
+                        {"center", ToVec3Arr(cam.center_)},
+                        {"look_at", ToVec3Arr(cam.lookat_)},
+                        {"defocus_angle", cam.defocus_angle_},
+                        {"focus_distance", cam.focus_dist_}};
   util::WriteJson(obj, filepath);
 }
 
@@ -45,6 +55,9 @@ AppSettings LoadAppSettings(const std::string& filepath) {
 std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
   cpu::Scene scene;
   nlohmann::json obj = util::LoadJsonFile(filepath);
+  std::string camera_filename = obj.value("camera", "default_cam") + ".json";
+  scene.cam = LoadCamera(GET_PATH("data/") + camera_filename);
+  scene.cam_name = camera_filename;
   auto primitives = obj["primitives"];
   auto json_spheres = primitives["spheres"];
 
@@ -100,7 +113,6 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
                                       radius, id_to_arr_idx[json_sphere.value("material_id", 0)]));
   }
 
-  scene.hittable_list = cpu::HittableList{std::make_shared<cpu::BVHNode>(scene.hittable_list)};
   return scene;
 }
 
@@ -124,6 +136,7 @@ void WriteScene(const cpu::Scene& scene, const std::string& filepath) {
   nlohmann::json obj = nlohmann::json::object();
   nlohmann::json spheres = nlohmann::json::array();
   nlohmann::json materials = nlohmann::json::array();
+  WriteCamera(scene.cam, GET_PATH("data/") + scene.cam_name + ".json");
 
   size_t i = 0;
   for (const auto& mat : scene.materials) {
@@ -148,6 +161,7 @@ void WriteScene(const cpu::Scene& scene, const std::string& filepath) {
       spheres.push_back(json_sphere);
     }
   }
+  obj["camera"] = scene.cam_name;
   obj["primitives"] = {{"spheres", spheres}};
   obj["materials"] = materials;
 

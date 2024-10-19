@@ -1,7 +1,9 @@
 #pragma once
 
 namespace raytrace2 {
-struct CameraSettings;
+namespace cpu {
+class Camera;
+}
 struct AppSettings;
 namespace cpu {
 struct Scene;
@@ -14,7 +16,7 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath);
 void WriteScene(const cpu::Scene& scene, const std::string& filepath);
 
 AppSettings LoadAppSettings(const std::string& filepath);
-CameraSettings LoadCameraSettings(const std::string& filepath);
-void WriteCameraSettings(const CameraSettings& settings, const std::string& filepath);
+cpu::Camera LoadCamera(const std::string& filepath);
+void WriteCamera(const cpu::Camera& cam, const std::string& filepath);
 
 }  // namespace raytrace2::serialize

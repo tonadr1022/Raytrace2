@@ -1,0 +1,7 @@
+{
+  "fov": 20,
+  "center": [-4, 4, 1],
+  "look_at": [0, 0, -1],
+  "defocus_angle": 0.5,
+  "focus_distance": 5.4
+}

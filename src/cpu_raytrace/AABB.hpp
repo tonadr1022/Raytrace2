@@ -14,9 +14,7 @@ class AABB {
 
   [[nodiscard]] bool Hit(const Ray& r, Interval ray_t) const {
     for (int axis = 0; axis < 3; axis++) {
-      // Check if the direction component is zero (ray is parallel to the planes)
       if (r.direction[axis] == 0.0f) {
-        // If the ray's origin is not within the slab for this axis, return false
         if (r.origin[axis] < min[axis] || r.origin[axis] > max[axis]) {
           return false;
         }

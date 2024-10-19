@@ -7,7 +7,7 @@ namespace raytrace2 {
 
 class App {
  public:
-  void Run();
+  void Run(int argc, char* argv[]);
   void OnEvent(SDL_Event& event);
 
  private:
