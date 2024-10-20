@@ -24,8 +24,7 @@ vec3 ToVec3(const std::array<float, 3>& arr) { return {arr[0], arr[1], arr[2]}; 
 std::array<float, 3> ToVec3Arr(const vec3& vec) { return {vec[0], vec[1], vec[2]}; }
 }  // namespace
 
-cpu::Camera LoadCamera(const std::string& filepath) {
-  nlohmann::json obj = util::LoadJsonFile(filepath);
+cpu::Camera LoadCamera(const nlohmann::json& obj) {
   cpu::Camera cam;
   cam.SetFOV(obj.value("fov", 90));
   cam.SetCenter(ToVec3(obj.value("center", std::array<float, 3>({0, 0, 1}))));
@@ -33,6 +32,11 @@ cpu::Camera LoadCamera(const std::string& filepath) {
   cam.SetDefocusAngle(obj.value("defocus_angle", 0.0f));
   cam.SetFocusDistance(obj.value("focus_distance", 1.f));
   return cam;
+}
+
+cpu::Camera LoadCamera(const std::string& filepath) {
+  nlohmann::json obj = util::LoadJsonFile(filepath);
+  return LoadCamera(obj);
 }
 
 void WriteCamera(const cpu::Camera& cam, const std::string& filepath) {
@@ -56,9 +60,14 @@ AppSettings LoadAppSettings(const std::string& filepath) {
 std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
   cpu::Scene scene;
   nlohmann::json obj = util::LoadJsonFile(filepath);
-  std::string camera_filename = obj.value("camera", "default_cam") + ".json";
-  scene.cam = LoadCamera(GET_PATH("data/") + camera_filename);
-  scene.cam_name = camera_filename;
+  auto cam_data = obj["camera"];
+  if (cam_data.is_object()) {
+    scene.cam = LoadCamera(cam_data);
+  } else {
+    std::string camera_filename = cam_data.get<std::string>() + ".json";
+    scene.cam = LoadCamera(GET_PATH("data/") + camera_filename);
+    scene.cam_name = camera_filename;
+  }
   auto primitives = obj["primitives"];
   auto json_spheres = primitives["spheres"];
 
@@ -79,8 +88,19 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
         tex = cpu::texture::SolidColor{
             .albedo = ToVec3(json_mat.value("albedo", std::array<float, 3>{1, 1, 1}))};
       } else if (type == "checker") {
-        tex = cpu::texture::Checker{1, json_mat.value("even_tex_idx", 0u),
-                                    json_mat.value("odd_tex_idx", 0u)};
+        tex =
+            cpu::texture::Checker{json_mat.value("scale", 1.0f), json_mat.value("even_tex_idx", 0u),
+                                  json_mat.value("odd_tex_idx", 0u)};
+      } else if (type == "noise") {
+        tex = cpu::texture::Noise{
+            .noise =
+                cpu::PerlinNoiseGen{
+                    json_mat.value("point_count", 256),
+                },
+            .albedo = ToVec3(json_mat.value("albedo", std::array<float, 3>{1, 1, 1})),
+            .scale = json_mat.value("scale", 1.0f),
+            .noise_type = static_cast<cpu::texture::NoiseType>(
+                json_mat.value("noise_type", static_cast<int>(cpu::texture::NoiseType::kMarble)))};
       } else {
         print_scene_error("Invalid texture type: " + type);
       }
@@ -172,7 +192,9 @@ void WriteScene(const cpu::Scene& scene, const std::string& filepath) {
   nlohmann::json obj = nlohmann::json::object();
   nlohmann::json spheres = nlohmann::json::array();
   nlohmann::json materials = nlohmann::json::array();
-  WriteCamera(scene.cam, GET_PATH("data/") + scene.cam_name + ".json");
+  if (!scene.cam_name.empty()) {
+    WriteCamera(scene.cam, GET_PATH("data/") + scene.cam_name + ".json");
+  }
 
   size_t i = 0;
   for (const auto& mat : scene.materials) {

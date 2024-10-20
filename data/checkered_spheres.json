@@ -1,0 +1,29 @@
+{
+  "camera": "camera_checkered_spheres",
+  "textures": [
+    { "type": "checker", "even_tex_idx": 1, "odd_tex_idx": 2, "scale": 0.32 },
+    { "type": "solid_color", "albedo": [0.2, 0.3, 0.1] },
+    { "type": "solid_color", "albedo": [0.9, 0.9, 0.9] }
+  ],
+  "materials": [
+    {
+      "tex_idx": 0,
+      "id": 0,
+      "type": "texture"
+    }
+  ],
+  "primitives": {
+    "spheres": [
+      {
+        "center": [0, -10, 0],
+        "material_id": 0,
+        "radius": 10
+      },
+      {
+        "center": [0, 10, 0],
+        "material_id": 0,
+        "radius": 10
+      }
+    ]
+  }
+}

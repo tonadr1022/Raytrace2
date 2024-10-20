@@ -13,7 +13,8 @@ using MaterialVariant =
 namespace texture {
 struct SolidColor;
 struct Checker;
-using TextureVariant = std::variant<SolidColor, Checker>;
+struct Noise;
+using TextureVariant = std::variant<SolidColor, Checker, Noise>;
 using TexArray = std::vector<TextureVariant>;
 }  // namespace texture
 

@@ -10,4 +10,14 @@ vec3 Checker::Value(const TexArray& tex_arr, vec2 uv, const vec3& p) const {
   return std::visit([&uv, &p, &tex_arr](auto&& tex) { return tex.Value(tex_arr, uv, p); }, t);
 }
 
+vec3 Noise::Value(const TexArray&, vec2, const vec3& p) const {
+  switch (noise_type) {
+    case NoiseType::kMarble:
+      return albedo * (1 + std::sin(scale * p.z + 10 * noise.Turb(p)));
+    case NoiseType::kPerlin:
+      return albedo * 0.5f * (1.0f + noise.Noise(scale * p));
+  }
+  return {};
+}
+
 }  // namespace raytrace2::cpu::texture

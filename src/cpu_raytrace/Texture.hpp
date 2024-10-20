@@ -4,6 +4,7 @@
 
 #include "Defs.hpp"
 #include "cpu_raytrace/Fwd.hpp"
+#include "cpu_raytrace/PerlinNoiseGen.hpp"
 
 namespace raytrace2::cpu {
 struct Scene;
@@ -24,6 +25,17 @@ struct Checker {
   float inv_scale{1};
   uint32_t even_tex_idx{};
   uint32_t odd_tex_idx{};
+};
+
+enum class NoiseType { kPerlin, kMarble };
+struct Noise {
+  [[nodiscard]] vec3 Value(const TexArray& tex_arr, vec2 uv, const vec3& p) const;
+  PerlinNoiseGen noise;
+  vec3 albedo{1};
+  float scale{1};
+  NoiseType noise_type{NoiseType::kMarble};
+
+ private:
 };
 
 }  // namespace raytrace2::cpu::texture

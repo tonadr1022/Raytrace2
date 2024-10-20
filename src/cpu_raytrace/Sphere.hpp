@@ -33,6 +33,7 @@ struct Sphere : public Hittable {
   uint32_t material_handle;
   bool Hit(const Scene& scene, const Ray& r, Interval ray_t, HitRecord& rec) const override;
   [[nodiscard]] AABB GetAABB() const override { return aabb; }
+  static vec2 GetUV(const vec3& p);
 };
 
 }  // namespace raytrace2::cpu

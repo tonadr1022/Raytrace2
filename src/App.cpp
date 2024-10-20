@@ -16,6 +16,7 @@
 #include "cpu_raytrace/Camera.hpp"
 #include "cpu_raytrace/Scene.hpp"
 #include "cpu_raytrace/Sphere.hpp"
+#include "cpu_raytrace/Texture.hpp"
 #include "gl/Buffer.hpp"
 #include "gl/ShaderManager.hpp"
 #include "gl/Texture.hpp"
@@ -64,7 +65,11 @@ glm::ivec2 viewport_dims;
 
 void MakeAFinalRenderScene(cpu::Scene& scene) {
   scene = {};
-  scene.materials.emplace_back(cpu::MaterialLambertian{.albedo = {0.5, 0.5, 0.5}});
+  // scene.materials.emplace_back(cpu::MaterialLambertian{.albedo = {0.5, 0.5, 0.5}});
+  scene.textures.emplace_back(cpu::texture::Checker{0.32, 1, 2});
+  scene.textures.emplace_back(cpu::texture::SolidColor{{0, 1, 1}});
+  scene.textures.emplace_back(cpu::texture::SolidColor{{1, 1, 0}});
+  scene.materials.emplace_back(cpu::MaterialTexture{.tex_idx = 0});
   scene.hittable_list.Add(std::make_shared<cpu::Sphere>(vec3{0, -1000, 0}, 1000, 0));
   for (int a = -11; a < 11; a++) {
     for (int b = -11; b < 11; b++) {
@@ -162,7 +167,7 @@ void App::Run(int argc, char* argv[]) {
     exit(1);
   }
   // MakeAFinalRenderScene(scene_opt.value());
-  // serialize::WriteScene(scene_opt.value(), GET_PATH("data/final_render_scene_blur.json"));
+  // serialize::WriteScene(scene_opt.value(), GET_PATH("data/final_render_checker.json"));
   cpu::Scene& scene = scene_opt.value();
   scene.hittable_list = cpu::HittableList{std::make_shared<cpu::BVHNode>(scene.hittable_list)};
   cpu_tracer_.camera = &scene.cam;
