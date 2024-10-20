@@ -21,34 +21,43 @@ color ToColor(const vec3& col) {
 
 float col = 0.5f;
 vec3 RayColor(const cpu::Ray& r, int depth, const Scene& scene) {
-  vec3 attenutation{1};
+  vec3 attenuation{1};
   Ray scattered = r;
   while (depth > 0) {
     cpu::HitRecord rec;
-    bool hit_any_sphere =
-        scene.hittable_list.Hit(scene, scattered, cpu::Interval{0.001, kInfinity}, rec);
-    // bool hit_any_sphere = HitAny(scene, std::span<cpu::Sphere const>(scene.spheres), scattered,
-    //                              cpu::Interval{0.001, kInfinity}, rec);
-    if (hit_any_sphere) {
+    if (scene.hittable_list.Hit(scene, scattered, cpu::Interval{0.001, kInfinity}, rec)) {
       vec3 local_attenuation;
       EASSERT(rec.material != nullptr);
-      if (Scatter(scene.textures, *rec.material, scattered, rec, local_attenuation, scattered)) {
-        attenutation *= local_attenuation;
+      vec3 emission_color = std::visit(
+          [&](auto&& material) { return material.Emit(scene.textures, rec.uv, rec.point); },
+          *rec.material);
+      bool is_scattered = std::visit(
+          [&](auto&& material) {
+            return material.Scatter(scene.textures, scattered, rec, local_attenuation, scattered);
+          },
+          *rec.material);
+      if (is_scattered) {
+        attenuation *= (local_attenuation + emission_color);
+        // attenuation += emission_color;
       } else {
-        // no scatter, so absorb the ray
-        return vec3{0};
+        // no scatter, so absorb ray/return emission color (0 if not emissive)
+        return emission_color * attenuation;
+        // return emission_color;
+        // return vec3{0};
       }
     } else {
       // calc background and break if no hit
-      vec3 unit_dir = glm::normalize(scattered.direction);
-      float a = 0.5f * (unit_dir.y + 1.0);
-      attenutation *= (1.0f - a) * vec3{1, 1, 1} + a * vec3{0.5, 0.7, 1.0};
+      // vec3 unit_dir = glm::normalize(scattered.direction);
+      // float a = 0.5f * (unit_dir.y + 1.0);
+      // attenuation *= (1.0f - a) * vec3{1, 1, 1} + a * vec3{0.5, 0.7, 1.0};
+      // TODO: parameterize
+      attenuation *= scene.background_color;
       break;
     }
 
     depth--;
   }
-  return attenutation;
+  return attenuation;
 }
 
 }  // namespace

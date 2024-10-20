@@ -1,0 +1,68 @@
+{
+  "camera": {
+    "fov": 80,
+    "center": [0, 0, 9]
+  },
+  "textures": [],
+  "materials": [
+    {
+      "id": 0,
+      "type": "lambertian",
+      "albedo": [1.0, 0.2, 0.2]
+    },
+    {
+      "id": 1,
+      "type": "lambertian",
+      "albedo": [0.2, 1.0, 0.2]
+    },
+    {
+      "id": 2,
+      "type": "lambertian",
+      "albedo": [0.2, 0.2, 1.0]
+    },
+    {
+      "id": 3,
+      "type": "lambertian",
+      "albedo": [1.0, 0.5, 0.0]
+    },
+    {
+      "id": 4,
+      "type": "lambertian",
+      "albedo": [0.2, 0.8, 0.8]
+    }
+  ],
+  "primitives": {
+    "quads": [
+      {
+        "q": [-3, -2, 5],
+        "u": [0, 0, -4],
+        "v": [0, 4, 0],
+        "material_id": 0
+      },
+      {
+        "q": [-2, -2, 0],
+        "u": [4, 0, 0],
+        "v": [0, 4, 0],
+        "material_id": 1
+      },
+      {
+        "q": [3, -2, 1],
+        "u": [0, 0, 4],
+        "v": [0, 4, 0],
+        "material_id": 2
+      },
+      {
+        "q": [-2, 3, 1],
+        "u": [4, 0, 0],
+        "v": [0, 0, 4],
+        "material_id": 3
+      },
+      {
+        "q": [-2, -3, 5],
+        "u": [4, 0, 0],
+        "v": [0, 0, -4],
+        "material_id": 4
+      }
+    ]
+  }
+}

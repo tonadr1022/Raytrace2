@@ -6,9 +6,10 @@ struct MaterialMetal;
 struct MaterialLambertian;
 struct MaterialDielectric;
 struct MaterialTexture;
+struct DiffuseLight;
 
-using MaterialVariant =
-    std::variant<MaterialMetal, MaterialLambertian, MaterialDielectric, MaterialTexture>;
+using MaterialVariant = std::variant<MaterialMetal, MaterialLambertian, MaterialDielectric,
+                                     MaterialTexture, DiffuseLight>;
 
 namespace texture {
 struct SolidColor;

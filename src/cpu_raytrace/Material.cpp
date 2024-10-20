@@ -7,12 +7,12 @@
 
 namespace raytrace2::cpu {
 
-bool Scatter(const texture::TexArray&, const MaterialMetal& mat, const Ray& r_in,
-             const HitRecord& rec, vec3& attenuation, Ray& scattered) {
+bool MaterialMetal::Scatter(const texture::TexArray&, const Ray& r_in, const HitRecord& rec,
+                            vec3& attenuation, Ray& scattered) const {
   vec3 reflected =
-      glm::normalize(math::Reflect(r_in.direction, rec.normal)) + (mat.fuzz * math::RandUnitVec3());
+      glm::normalize(math::Reflect(r_in.direction, rec.normal)) + (fuzz * math::RandUnitVec3());
   scattered = Ray{.origin = rec.point, .direction = reflected, .time = r_in.time};
-  attenuation = mat.albedo;
+  attenuation = albedo;
   return true;
 }
 
@@ -26,10 +26,10 @@ auto SchlickReflectance(auto cosine, auto refraction_index) {
 
 }  // namespace
 
-bool Scatter(const texture::TexArray&, const MaterialDielectric& mat, const Ray& r_in,
-             const HitRecord& rec, vec3& attenuation, Ray& scattered) {
+bool MaterialDielectric::Scatter(const texture::TexArray&, const Ray& r_in, const HitRecord& rec,
+                                 vec3& attenuation, Ray& scattered) const {
   attenuation = vec3(1.0f);
-  float ri = rec.front_face ? (1.0 / mat.refraction_index) : mat.refraction_index;
+  float ri = rec.front_face ? (1.0 / refraction_index) : refraction_index;
   vec3 unit_dir = glm::normalize(r_in.direction);
   float cos_theta = glm::min(glm::dot(-unit_dir, rec.normal), 1.0f);
   float sin_theta = glm::sqrt(1.f - cos_theta * cos_theta);
@@ -44,19 +44,19 @@ bool Scatter(const texture::TexArray&, const MaterialDielectric& mat, const Ray&
   return true;
 }
 
-bool Scatter(const texture::TexArray&, const MaterialLambertian& mat, const Ray& r_in,
-             const HitRecord& rec, vec3& attenuation, Ray& scattered) {
+bool MaterialLambertian::Scatter(const texture::TexArray&, const Ray& r_in, const HitRecord& rec,
+                                 vec3& attenuation, Ray& scattered) const {
   vec3 scattered_dir = rec.normal + math::RandUnitVec3();
   if (math::NearZero(scattered_dir)) {
     scattered_dir = rec.normal;
   }
   scattered = Ray{.origin = rec.point, .direction = scattered_dir, .time = r_in.time};
-  attenuation = mat.albedo;
+  attenuation = albedo;
   return true;
 }
 
-bool Scatter(const texture::TexArray& tex_arr, const MaterialTexture& mat, const Ray& r_in,
-             const HitRecord& rec, vec3& attenuation, Ray& scattered) {
+bool MaterialTexture::Scatter(const texture::TexArray& tex_arr, const Ray& r_in,
+                              const HitRecord& rec, vec3& attenuation, Ray& scattered) const {
   vec3 scattered_dir = rec.normal + math::RandUnitVec3();
   if (math::NearZero(scattered_dir)) {
     scattered_dir = rec.normal;
@@ -64,17 +64,13 @@ bool Scatter(const texture::TexArray& tex_arr, const MaterialTexture& mat, const
   scattered = Ray{.origin = rec.point, .direction = scattered_dir, .time = r_in.time};
   attenuation = std::visit(
       [&rec, &tex_arr](auto&& tex) -> vec3 { return tex.Value(tex_arr, rec.uv, rec.point); },
-      tex_arr[mat.tex_idx]);
+      tex_arr[tex_idx]);
   return true;
 }
 
-bool Scatter(const texture::TexArray& tex_arr, const MaterialVariant& mat, const Ray& ray,
-             const HitRecord& rec, vec3& attenutation, Ray& scattered) {
-  return std::visit(
-      [&](const auto& material) {
-        return Scatter(tex_arr, material, ray, rec, attenutation, scattered);
-      },
-      mat);
+vec3 DiffuseLight::Emit(const texture::TexArray& tex_arr, const vec2& uv, const vec3& p) const {
+  return std::visit([&tex_arr, &uv, &p](auto&& tex) -> vec3 { return tex.Value(tex_arr, uv, p); },
+                    tex_arr[tex_idx]);
 }
 
 }  // namespace raytrace2::cpu

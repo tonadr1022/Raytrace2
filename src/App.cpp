@@ -63,50 +63,50 @@ class Quad {
 std::unique_ptr<gl::Texture> output_tex;
 glm::ivec2 viewport_dims;
 
-void MakeAFinalRenderScene(cpu::Scene& scene) {
-  scene = {};
-  // scene.materials.emplace_back(cpu::MaterialLambertian{.albedo = {0.5, 0.5, 0.5}});
-  scene.textures.emplace_back(cpu::texture::Checker{0.32, 1, 2});
-  scene.textures.emplace_back(cpu::texture::SolidColor{{0, 1, 1}});
-  scene.textures.emplace_back(cpu::texture::SolidColor{{1, 1, 0}});
-  scene.materials.emplace_back(cpu::MaterialTexture{.tex_idx = 0});
-  scene.hittable_list.Add(std::make_shared<cpu::Sphere>(vec3{0, -1000, 0}, 1000, 0));
-  for (int a = -11; a < 11; a++) {
-    for (int b = -11; b < 11; b++) {
-      float choose_mat = cpu::math::RandFloat();
-      vec3 center{a + 0.9 * cpu::math::RandFloat(), 0.2, b + 0.9 * cpu::math::RandFloat()};
-      if (glm::length(center - vec3(4, 0.2, 0)) > 0.9) {
-        cpu::MaterialVariant mat;
-        if (choose_mat < 0.8) {
-          mat = cpu::MaterialLambertian{.albedo = cpu::math::RandVec3() * cpu::math::RandVec3()};
-        } else if (choose_mat < 0.95) {
-          mat = cpu::MaterialMetal{.albedo = cpu::math::RandVec3(0.5, 1),
-                                   .fuzz = cpu::math::RandFloat(0, 0.5)};
-        } else {
-          mat = cpu::MaterialDielectric{.refraction_index = 1.5};
-        }
-        scene.hittable_list.Add(
-            std::make_shared<cpu::Sphere>(center, vec3{0, cpu::math::RandFloat(0, 0.5), 0}, 0.2,
-                                          static_cast<uint32_t>(scene.materials.size())));
-        scene.materials.emplace_back(mat);
-      }
-    }
-  }
-
-  scene.hittable_list.Add(std::make_shared<cpu::Sphere>(
-      vec3{0, 1, 0}, 1.0, static_cast<uint32_t>(scene.materials.size())));
-  scene.materials.emplace_back(cpu::MaterialDielectric{.refraction_index = 1.5});
-
-  scene.hittable_list.Add(std::make_shared<cpu::Sphere>(
-      vec3{-4, 1, 0}, 1.0, static_cast<uint32_t>(scene.materials.size())));
-  scene.materials.emplace_back(cpu::MaterialLambertian{.albedo = {0.4, 0.2, 0.1}});
-
-  scene.hittable_list.Add(std::make_shared<cpu::Sphere>(
-      vec3{4, 1, 0}, 1.0, static_cast<uint32_t>(scene.materials.size())));
-  scene.materials.emplace_back(cpu::MaterialMetal{.albedo = {0.7, 0.6, 0.5}, .fuzz = 0.0});
-  scene.cam = serialize::LoadCamera(GET_PATH("data/cam1.json"));
-  scene.cam_name = "cam1";
-}
+// void MakeAFinalRenderScene(cpu::Scene& scene) {
+//   scene = {};
+//   // scene.materials.emplace_back(cpu::MaterialLambertian{.albedo = {0.5, 0.5, 0.5}});
+//   scene.textures.emplace_back(cpu::texture::Checker{0.32, 1, 2});
+//   scene.textures.emplace_back(cpu::texture::SolidColor{{0, 1, 1}});
+//   scene.textures.emplace_back(cpu::texture::SolidColor{{1, 1, 0}});
+//   scene.materials.emplace_back(cpu::MaterialTexture{.tex_idx = 0});
+//   scene.hittable_list.Add(std::make_shared<cpu::Sphere>(vec3{0, -1000, 0}, 1000, 0));
+//   for (int a = -11; a < 11; a++) {
+//     for (int b = -11; b < 11; b++) {
+//       float choose_mat = cpu::math::RandFloat();
+//       vec3 center{a + 0.9 * cpu::math::RandFloat(), 0.2, b + 0.9 * cpu::math::RandFloat()};
+//       if (glm::length(center - vec3(4, 0.2, 0)) > 0.9) {
+//         cpu::MaterialVariant mat;
+//         if (choose_mat < 0.8) {
+//           mat = cpu::MaterialLambertian{.albedo = cpu::math::RandVec3() * cpu::math::RandVec3()};
+//         } else if (choose_mat < 0.95) {
+//           mat = cpu::MaterialMetal{.albedo = cpu::math::RandVec3(0.5, 1),
+//                                    .fuzz = cpu::math::RandFloat(0, 0.5)};
+//         } else {
+//           mat = cpu::MaterialDielectric{.refraction_index = 1.5};
+//         }
+//         scene.hittable_list.Add(
+//             std::make_shared<cpu::Sphere>(center, vec3{0, cpu::math::RandFloat(0, 0.5), 0}, 0.2,
+//                                           static_cast<uint32_t>(scene.materials.size())));
+//         scene.materials.emplace_back(mat);
+//       }
+//     }
+//   }
+//
+//   scene.hittable_list.Add(std::make_shared<cpu::Sphere>(
+//       vec3{0, 1, 0}, 1.0, static_cast<uint32_t>(scene.materials.size())));
+//   scene.materials.emplace_back(cpu::MaterialDielectric{.refraction_index = 1.5});
+//
+//   scene.hittable_list.Add(std::make_shared<cpu::Sphere>(
+//       vec3{-4, 1, 0}, 1.0, static_cast<uint32_t>(scene.materials.size())));
+//   scene.materials.emplace_back(cpu::MaterialLambertian{.albedo = {0.4, 0.2, 0.1}});
+//
+//   scene.hittable_list.Add(std::make_shared<cpu::Sphere>(
+//       vec3{4, 1, 0}, 1.0, static_cast<uint32_t>(scene.materials.size())));
+//   scene.materials.emplace_back(cpu::MaterialMetal{.albedo = {0.7, 0.6, 0.5}, .fuzz = 0.0});
+//   scene.cam = serialize::LoadCamera(GET_PATH("data/cam1.json"));
+//   scene.cam_name = "cam1";
+// }
 
 bool imgui_enabled{true};
 }  // namespace

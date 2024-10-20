@@ -17,7 +17,7 @@ set(SOURCES
     cpu_raytrace/RayTracer.cpp
     cpu_raytrace/Material.cpp
     cpu_raytrace/PerlinNoiseGen.cpp
-    cpu_raytrace/Scene.cpp
+    cpu_raytrace/Quad.cpp
     cpu_raytrace/Texture.cpp
     cpu_raytrace/BVH.cpp
     cpu_raytrace/HittableList.cpp

@@ -7,42 +7,55 @@ namespace raytrace2::cpu {
 struct HitRecord;
 struct Ray;
 
-template <typename T>
+enum class MaterialType { kScattering, kEmissive };
+
+template <typename T, MaterialType Type = MaterialType::kScattering>
 struct Material {
-  bool Scatter(const Ray& r_in, const HitRecord& rec, vec3& attenuation, Ray& scattered) const {
-    return static_cast<const T*>(this)->Scatter(r_in, rec, attenuation, scattered);
+  bool Scatter(const texture::TexArray& tex_arr, const Ray& r_in, const HitRecord& rec,
+               vec3& attenuation, Ray& scattered) const {
+    if constexpr (Type == MaterialType::kScattering) {
+      return static_cast<const T*>(this)->Scatter(tex_arr, r_in, rec, attenuation, scattered);
+    }
+    return false;
+  }
+
+  [[nodiscard]] vec3 Emit(const texture::TexArray& tex_arr, const vec2& uv, const vec3& p) const {
+    if constexpr (Type == MaterialType::kEmissive) {
+      return static_cast<const T*>(this)->Emit(tex_arr, uv, p);
+    } else {
+      return vec3{0};
+    }
   }
 };
 
 struct alignas(16) MaterialMetal : public Material<MaterialMetal> {
   vec3 albedo;
   float fuzz{0};
-  bool Scatter(const Ray& r_in, const HitRecord& rec, vec3& attenuation, Ray& scattered) const;
+  bool Scatter(const texture::TexArray& tex_arr, const Ray& r_in, const HitRecord& rec,
+               vec3& attenuation, Ray& scattered) const;
 };
 
 struct alignas(16) MaterialDielectric : public Material<MaterialMetal> {
   float refraction_index;
-  bool Scatter(const Ray& r_in, const HitRecord& rec, vec3& attenuation, Ray& scattered) const;
+  bool Scatter(const texture::TexArray& tex_arr, const Ray& r_in, const HitRecord& rec,
+               vec3& attenuation, Ray& scattered) const;
 };
 
-struct alignas(16) MaterialTexture : public Material<MaterialLambertian> {
-  uint32_t tex_idx;
+struct alignas(16) MaterialTexture : public Material<MaterialTexture> {
+  bool Scatter(const texture::TexArray& tex_arr, const Ray& r_in, const HitRecord& rec,
+               vec3& attenuation, Ray& scattered) const;
+  uint32_t tex_idx{};
 };
+
+struct DiffuseLight : public Material<DiffuseLight, MaterialType::kEmissive> {
+  uint32_t tex_idx{};
+  [[nodiscard]] vec3 Emit(const texture::TexArray& tex_arr, const vec2& uv, const vec3& p) const;
+};
+
 struct alignas(16) MaterialLambertian : public Material<MaterialLambertian> {
   vec3 albedo;
+  bool Scatter(const texture::TexArray& tex_arr, const Ray& r_in, const HitRecord& rec,
+               vec3& attenuation, Ray& scattered) const;
 };
-
-bool Scatter(const texture::TexArray&, const MaterialTexture& mat, const Ray& r_in,
-             const HitRecord& rec, vec3& attenuation, Ray& scattered);
-bool Scatter(const texture::TexArray&, const MaterialLambertian& mat, const Ray& r_in,
-             const HitRecord& rec, vec3& attenuation, Ray& scattered);
-bool Scatter(const texture::TexArray&, const MaterialDielectric& mat, const Ray& r_in,
-             const HitRecord& rec, vec3& attenuation, Ray& scattered);
-bool Scatter(const texture::TexArray&, const MaterialMetal& mat, const Ray& r_in,
-             const HitRecord& rec, vec3& attenuation, Ray& scattered);
-
-[[nodiscard]] extern bool Scatter(const texture::TexArray&, const MaterialVariant& mat,
-                                  const Ray& ray, const HitRecord& rec, vec3& attenutation,
-                                  Ray& scattered);
 
 }  // namespace raytrace2::cpu

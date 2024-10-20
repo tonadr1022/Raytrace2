@@ -10,14 +10,12 @@ namespace raytrace2::cpu {
 BVHNode::BVHNode(std::vector<std::shared_ptr<Hittable>>& objects, size_t start, size_t end) {
   using Comparator = bool (*)(const std::shared_ptr<Hittable>&, const std::shared_ptr<Hittable>&);
   std::array<Comparator, 3> comparators = {BoxCompareX, BoxCompareY, BoxCompareZ};
-  int axis_idx = math::RandInt(0, 2);
   size_t object_span = end - start;
   aabb_.min = glm::vec3{kInfinity};
   aabb_.max = glm::vec3{-kInfinity};
   for (size_t object_idx = start; object_idx < end; object_idx++) {
     aabb_ = AABB{aabb_, objects[object_idx]->GetAABB()};
   }
-  int axis = aabb_.LongestAxis();
   if (object_span == 1) {
     left_ = objects[start];
     right_ = objects[start];
@@ -25,7 +23,8 @@ BVHNode::BVHNode(std::vector<std::shared_ptr<Hittable>>& objects, size_t start, 
     left_ = objects[start];
     right_ = objects[start + 1];
   } else {
-    std::sort(std::begin(objects) + start, std::begin(objects) + end, comparators[axis_idx]);
+    std::sort(std::begin(objects) + start, std::begin(objects) + end,
+              comparators[aabb_.LongestAxis()]);
     auto mid = start + object_span / 2;
     left_ = std::make_shared<BVHNode>(objects, start, mid);
     right_ = std::make_shared<BVHNode>(objects, mid, end);

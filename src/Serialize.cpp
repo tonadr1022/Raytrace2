@@ -12,6 +12,7 @@
 #include "cpu_raytrace/Fwd.hpp"
 #include "cpu_raytrace/HittableList.hpp"
 #include "cpu_raytrace/Material.hpp"
+#include "cpu_raytrace/Quad.hpp"
 #include "cpu_raytrace/Ray.hpp"
 #include "cpu_raytrace/Scene.hpp"
 #include "cpu_raytrace/Sphere.hpp"
@@ -61,6 +62,7 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
   cpu::Scene scene;
   nlohmann::json obj = util::LoadJsonFile(filepath);
   auto cam_data = obj["camera"];
+  scene.background_color = ToVec3(obj.value("background_color", std::array<float, 3>({1, 1, 1})));
   if (cam_data.is_object()) {
     scene.cam = LoadCamera(cam_data);
   } else {
@@ -80,7 +82,6 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
   size_t num_materials = json_materials.size();
 
   if (json_textures.is_array()) {
-    size_t num_textures = json_textures.size();
     for (const nlohmann::json& json_mat : json_textures) {
       std::string type = json_mat.value("type", "");
       cpu::texture::TextureVariant tex;
@@ -138,6 +139,8 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
           .fuzz = json_mat.value("fuzz", 0.0f)};
     } else if (type == "texture") {
       mat = cpu::MaterialTexture{.tex_idx = json_mat.value("tex_idx", 0u)};
+    } else if (type == "diffuse_light") {
+      mat = cpu::DiffuseLight{.tex_idx = json_mat.value("tex_idx", 0u)};
     } else {
       print_scene_error("Invalid material type");
     }
@@ -156,6 +159,15 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
                                       radius, id_to_arr_idx[json_sphere.value("material_id", 0)]));
   }
 
+  auto json_quads = primitives["quads"];
+  for (const nlohmann::json& json_quad : json_quads) {
+    auto q = ToVec3(json_quad.value("q", std::array<float, 3>{0, 0, 0}));
+    auto u = ToVec3(json_quad.value("u", std::array<float, 3>{1, 0, 0}));
+    auto v = ToVec3(json_quad.value("v", std::array<float, 3>{0, 0, 1}));
+    scene.hittable_list.Add(
+        std::make_shared<cpu::Quad>(q, u, v, id_to_arr_idx[json_quad.value("material_id", 0)]));
+  }
+
   return scene;
 }
 
@@ -169,16 +181,22 @@ nlohmann::json::object_t Serialize(const cpu::MaterialLambertian& mat) {
   return {{"albedo", ToVec3Arr(mat.albedo)}, {"type", "lambertian"}};
 }
 
-nlohmann::json::object_t Serialize(const cpu::texture::Checker& mat) {
-  return {{"even_tex_idx", mat.even_tex_idx},
-          {"odd_tex_idx", mat.odd_tex_idx},
-          {"scale", 1.f / mat.inv_scale}};
-}
-nlohmann::json::object_t Serialize(const cpu::texture::SolidColor& mat) {
-  return {{"albedo", ToVec3Arr(mat.albedo)}};
-}
+// TODO: rest of serialization write
+// nlohmann::json::object_t Serialize(const cpu::texture::Checker& mat) {
+//   return {{"even_tex_idx", mat.even_tex_idx},
+//           {"odd_tex_idx", mat.odd_tex_idx},
+//           {"scale", 1.f / mat.inv_scale}};
+// }
+//
+// nlohmann::json::object_t Serialize(const cpu::texture::SolidColor& mat) {
+//   return {{"albedo", ToVec3Arr(mat.albedo)}};
+// }
 
 nlohmann::json::object_t Serialize(const cpu::MaterialTexture& mat) {
+  return {{"tex_idx", mat.tex_idx}};
+}
+
+nlohmann::json::object_t Serialize(const cpu::DiffuseLight& mat) {
   return {{"tex_idx", mat.tex_idx}};
 }
 

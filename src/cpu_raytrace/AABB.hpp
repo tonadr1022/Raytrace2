@@ -9,8 +9,10 @@ namespace raytrace2::cpu {
 class AABB {
  public:
   AABB() = default;
-  AABB(const vec3& min, const vec3& max) : min(min), max(max) {}
-  AABB(const AABB& a, const AABB& b) : min(glm::min(a.min, b.min)), max(glm::max(a.max, b.max)) {}
+  AABB(const vec3& min, const vec3& max) : min(min), max(max) { PadToMinimums(); }
+  AABB(const AABB& a, const AABB& b) : min(glm::min(a.min, b.min)), max(glm::max(a.max, b.max)) {
+    PadToMinimums();
+  }
 
   [[nodiscard]] bool Hit(const Ray& r, Interval ray_t) const {
     for (int axis = 0; axis < 3; axis++) {
@@ -41,5 +43,24 @@ class AABB {
     return y_size > z_size ? 1 : 2;
   }
   vec3 min{kInfinity}, max{-kInfinity};
+
+ private:
+  void PadToMinimums() {
+    // Adjust aabb so no side is narrower than delta, padding if necessary
+    constexpr const float kDelta = 0.0001f;
+    constexpr const float kHalfDelta = kDelta / 2.f;
+    if (std::abs(max.x - min.x) < kDelta) {
+      max.x += kHalfDelta;
+      min.x -= kHalfDelta;
+    }
+    if (std::abs(max.y - min.y) < kDelta) {
+      max.y += kHalfDelta;
+      min.y -= kHalfDelta;
+    }
+    if (std::abs(max.z - min.z) < kDelta) {
+      max.z += kHalfDelta;
+      min.z -= kHalfDelta;
+    }
+  }
 };
 }  // namespace raytrace2::cpu

@@ -18,6 +18,7 @@ struct Scene {
   texture::TexArray textures;
   Camera cam;
   std::string cam_name;
+  vec3 background_color{1};
 };
 
 }  // namespace raytrace2::cpu
