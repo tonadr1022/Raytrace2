@@ -19,6 +19,7 @@ class Window {
   void SetMouseGrab(bool state);
   void SetTitle(std::string_view title);
   void SetFullScreen(bool fullscreen);
+  void SetSize(glm::ivec2 size);
   [[nodiscard]] glm::ivec2 GetWindowSize() const;
   [[nodiscard]] glm::ivec2 GetMousePosition() const;
   [[nodiscard]] glm::ivec2 GetWindowCenter() const;

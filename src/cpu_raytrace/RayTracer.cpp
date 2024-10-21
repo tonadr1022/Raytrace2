@@ -13,7 +13,7 @@ namespace raytrace2::cpu {
 
 namespace {
 
-constexpr int kMaxDepth = 50;
+constexpr int kMaxDepth = 500;
 
 color ToColor(const vec3& col) {
   return color{floor(col.x * 255.999), floor(col.y * 255.999), floor(col.z * 255.999), 255};
@@ -37,13 +37,11 @@ vec3 RayColor(const cpu::Ray& r, int depth, const Scene& scene) {
           },
           *rec.material);
       if (is_scattered) {
-        attenuation *= (local_attenuation + emission_color);
-        // attenuation += emission_color;
+        attenuation *= (local_attenuation);
+        attenuation += emission_color;
       } else {
         // no scatter, so absorb ray/return emission color (0 if not emissive)
         return emission_color * attenuation;
-        // return emission_color;
-        // return vec3{0};
       }
     } else {
       // calc background and break if no hit

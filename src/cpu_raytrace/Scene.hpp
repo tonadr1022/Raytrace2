@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/ext/vector_int2.hpp>
+
 #include "Fwd.hpp"
 #include "Material.hpp"
 #include "cpu_raytrace/BVH.hpp"
@@ -19,6 +21,7 @@ struct Scene {
   Camera cam;
   std::string cam_name;
   vec3 background_color{1};
+  glm::ivec2 dims{0, 0};
 };
 
 }  // namespace raytrace2::cpu

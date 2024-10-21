@@ -1,4 +1,3 @@
-
 #include "Util.hpp"
 
 #include <fstream>
@@ -8,7 +7,6 @@
 #pragma clang diagnostic ignored "-Wall"
 #pragma clang diagnostic ignored "-Wextra"
 
-// Code that triggers warnings
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image/stb_image.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION

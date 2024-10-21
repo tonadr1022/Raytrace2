@@ -8,7 +8,7 @@
       "scale": 4.0,
       "type": "noise",
       "noise_type": 1,
-      "albedo": [0.5, 0.5, 0.5]
+      "albedo": [1, 1, 1]
     }
   ],
   "materials": [

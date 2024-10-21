@@ -13,7 +13,8 @@ vec3 Checker::Value(const TexArray& tex_arr, vec2 uv, const vec3& p) const {
 vec3 Noise::Value(const TexArray&, vec2, const vec3& p) const {
   switch (noise_type) {
     case NoiseType::kMarble:
-      return albedo * (1 + std::sin(scale * p.z + 10 * noise.Turb(p)));
+      return albedo * 0.5f * (1 + std::sin(scale * p.z + 10 * noise.Turb(p)));
+      // return vec3(1, 1, 1) * noise.Turb(p, 7);
     case NoiseType::kPerlin:
       return albedo * 0.5f * (1.0f + noise.Noise(scale * p));
   }

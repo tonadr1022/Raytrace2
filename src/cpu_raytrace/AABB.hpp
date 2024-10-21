@@ -34,9 +34,9 @@ class AABB {
   }
 
   [[nodiscard]] int LongestAxis() const {
-    float x_size = max.x - min.x;
-    float y_size = max.y - min.y;
-    float z_size = max.z - min.z;
+    float x_size = std::fabs(max.x - min.x);
+    float y_size = std::fabs(max.y - min.y);
+    float z_size = std::fabs(max.z - min.z);
     if (x_size > y_size) {
       return x_size > z_size ? 0 : 2;
     }
@@ -49,15 +49,15 @@ class AABB {
     // Adjust aabb so no side is narrower than delta, padding if necessary
     constexpr const float kDelta = 0.0001f;
     constexpr const float kHalfDelta = kDelta / 2.f;
-    if (std::abs(max.x - min.x) < kDelta) {
+    if (std::fabs(max.x - min.x) < kDelta) {
       max.x += kHalfDelta;
       min.x -= kHalfDelta;
     }
-    if (std::abs(max.y - min.y) < kDelta) {
+    if (std::fabs(max.y - min.y) < kDelta) {
       max.y += kHalfDelta;
       min.y -= kHalfDelta;
     }
-    if (std::abs(max.z - min.z) < kDelta) {
+    if (std::fabs(max.z - min.z) < kDelta) {
       max.z += kHalfDelta;
       min.z -= kHalfDelta;
     }

@@ -138,9 +138,25 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
           .albedo = ToVec3(json_mat.value("albedo", std::array<float, 3>{1, 1, 1})),
           .fuzz = json_mat.value("fuzz", 0.0f)};
     } else if (type == "texture") {
-      mat = cpu::MaterialTexture{.tex_idx = json_mat.value("tex_idx", 0u)};
+      if (json_mat.contains("tex_idx")) {
+        mat = cpu::MaterialTexture{.tex_idx = json_mat.value("tex_idx", 0u)};
+      } else if (json_mat.contains("albedo")) {
+        mat = cpu::MaterialTexture{.tex_idx = static_cast<uint32_t>(scene.textures.size())};
+        scene.textures.emplace_back(cpu::texture::SolidColor{
+            .albedo = ToVec3(json_mat.value("albedo", std::array<float, 3>({1, 1, 1})))});
+      } else {
+        print_scene_error("invalid texture, must contain tex_idx or albedo");
+      }
     } else if (type == "diffuse_light") {
-      mat = cpu::DiffuseLight{.tex_idx = json_mat.value("tex_idx", 0u)};
+      if (json_mat.contains("tex_idx")) {
+        mat = cpu::DiffuseLight{.tex_idx = json_mat.value("tex_idx", 0u)};
+      } else if (json_mat.contains("albedo")) {
+        mat = cpu::DiffuseLight{.tex_idx = static_cast<uint32_t>(scene.textures.size())};
+        scene.textures.emplace_back(cpu::texture::SolidColor{
+            .albedo = ToVec3(json_mat.value("albedo", std::array<float, 3>({1, 1, 1})))});
+      } else {
+        print_scene_error("invalid diffuse light, must contain tex_idx or albedo");
+      }
     } else {
       print_scene_error("Invalid material type");
     }
@@ -166,6 +182,17 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
     auto v = ToVec3(json_quad.value("v", std::array<float, 3>{0, 0, 1}));
     scene.hittable_list.Add(
         std::make_shared<cpu::Quad>(q, u, v, id_to_arr_idx[json_quad.value("material_id", 0)]));
+  }
+
+  if (obj["camera"].is_object()) {
+    auto cam = obj["camera"];
+    int width = cam.value("width", 0);
+    float aspect_ratio = cam.value("aspect_ratio", 0.0f);
+    if (width != 0 && aspect_ratio != 0.0f) {
+      float height = width / aspect_ratio;
+      std::cout << width << ' ' << height << "hello\n";
+      scene.dims = {width, height};
+    }
   }
 
   return scene;

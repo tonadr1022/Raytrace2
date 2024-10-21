@@ -6,8 +6,9 @@
   },
   "background_color": [0, 0, 0],
   "textures": [
-    { "type": "noise", "scale": 4, "noise_type": 1, "albedo": [0.5, 0.5, 0.5] },
-    { "type": "solid_color", "albedo": [32, 32, 32] }
+    { "type": "noise", "scale": 4, "noise_type": 1, "albedo": [1, 1, 1] },
+    { "type": "solid_color", "albedo": [4, 4, 4] },
+    { "type": "solid_color", "albedo": [0, 0, 0] }
   ],
   "materials": [
     {
@@ -19,6 +20,11 @@
       "id": 1,
       "type": "diffuse_light",
       "tex_idx": 1
+    },
+    {
+      "id": 2,
+      "type": "texture",
+      "tex_idx": 2
     }
   ],
   "primitives": {
@@ -45,6 +51,12 @@
         "u": [2, 0, 0],
         "v": [0, 2, 0],
         "material_id": 1
+      },
+      {
+        "q": [3, 1, -2.001],
+        "u": [2, 0, 0],
+        "v": [0, 2, 0],
+        "material_id": 2
       }
     ]
   }

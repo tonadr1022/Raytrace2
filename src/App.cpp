@@ -143,14 +143,39 @@ void BindAndSetUniforms(cpu::Camera& cam, const cpu::Scene& scene) {
 }
 
 void App::Run(int argc, char* argv[]) {
-  std::string scene_name;
+  std::string full_scene_path;
+  std::string filename;
   if (argc == 1) {
-    scene_name = GET_PATH("data/scene2.json");
+    full_scene_path = GET_PATH("data/scene2.json");
+    filename = "scene2";
   } else {
-    scene_name = GET_PATH("data/") + std::string(argv[1]);
+    full_scene_path = std::string(argv[1]);
+    const std::string suffix = ".json";
+    if (full_scene_path.length() >= suffix.length() &&
+        full_scene_path.compare(full_scene_path.length() - suffix.length(), suffix.length(),
+                                suffix) == 0) {
+      filename = full_scene_path.substr(0, full_scene_path.length() - suffix.length());
+    } else {
+      filename = full_scene_path;
+      full_scene_path += suffix;
+    }
+    full_scene_path = GET_PATH("data/") + full_scene_path;
   }
   AppSettings app_settings = serialize::LoadAppSettings(GET_PATH("data/settings.json"));
-  Window window{1600, 900, "raytrace_2", [this](SDL_Event& event) { OnEvent(event); }};
+  glm::ivec2 dims{1600, 900};
+  auto scene_opt = serialize::LoadScene(full_scene_path);
+  if (!scene_opt.has_value()) {
+    exit(1);
+  }
+  cpu::Scene& scene = scene_opt.value();
+  if (scene.dims.x != 0 && scene.dims.y != 0) {
+    dims = scene.dims;
+    scene.cam.SetDims(scene.dims);
+  }
+  scene.hittable_list = cpu::HittableList{std::make_shared<cpu::BVHNode>(scene.hittable_list)};
+  cpu_tracer_.camera = &scene.cam;
+
+  Window window{dims.x, dims.y, "raytrace_2", [this](SDL_Event& event) { OnEvent(event); }};
   gl::ShaderManager::Init();
   gl::ShaderManager::Get().AddShader(
       "textured_quad", {{GET_SHADER_PATH("textured_quad.vs.glsl"), gl::ShaderType::kVertex, {}},
@@ -162,15 +187,6 @@ void App::Run(int argc, char* argv[]) {
   Quad quad;
   quad.Init();
 
-  auto scene_opt = serialize::LoadScene(scene_name);
-  if (!scene_opt.has_value()) {
-    exit(1);
-  }
-  // MakeAFinalRenderScene(scene_opt.value());
-  // serialize::WriteScene(scene_opt.value(), GET_PATH("data/final_render_checker.json"));
-  cpu::Scene& scene = scene_opt.value();
-  scene.hittable_list = cpu::HittableList{std::make_shared<cpu::BVHNode>(scene.hittable_list)};
-  cpu_tracer_.camera = &scene.cam;
   OnResize(window.GetWindowSize());
 
   GLuint fbo;
@@ -216,7 +232,7 @@ void App::Run(int argc, char* argv[]) {
         std::filesystem::create_directory(GET_PATH("output/"));
       }
       std::string out_path =
-          GET_PATH("output/") + std::string("render_") + util::CurrentDateTime() + ".png";
+          GET_PATH("output/") + filename + "_" + util::CurrentDateTime() + ".png";
       std::cout << "Writing image: " << out_path << '\n';
       util::WriteImage(output_tex->Id(), 4, out_path);
       saved = true;
@@ -256,7 +272,9 @@ void App::Run(int argc, char* argv[]) {
     output_tex->Bind(0);
     glTextureSubImage2D(output_tex->Id(), 0, 0, 0, viewport_dims.x, viewport_dims.y, GL_RGBA,
                         GL_UNSIGNED_BYTE, cpu_tracer_.Pixels().data());
+    glEnable(GL_FRAMEBUFFER_SRGB);
     quad.Draw();
+    glDisable(GL_FRAMEBUFFER_SRGB);
 
     window.EndRenderFrame(imgui_enabled);
   }

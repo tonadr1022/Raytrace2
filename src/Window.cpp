@@ -314,3 +314,5 @@ glm::ivec2 Window::GetMousePosition() const {
 }
 
 glm::ivec2 Window::GetWindowCenter() const { return GetWindowSize() / 2; }
+
+void Window::SetSize(glm::ivec2 size) { SDL_SetWindowSize(window_, size.x, size.y); }
