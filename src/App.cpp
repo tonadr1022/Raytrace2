@@ -173,6 +173,8 @@ void App::Run(int argc, char* argv[]) {
     scene.cam.SetDims(scene.dims);
   }
   scene.hittable_list = cpu::HittableList{std::make_shared<cpu::BVHNode>(scene.hittable_list)};
+  // TODO: streamline
+  cpu_tracer_.max_depth = app_settings.max_depth;
   cpu_tracer_.camera = &scene.cam;
 
   Window window{dims.x, dims.y, "raytrace_2", [this](SDL_Event& event) { OnEvent(event); }};
@@ -224,7 +226,9 @@ void App::Run(int argc, char* argv[]) {
     if (!done || !app_settings.render_once) {
       rendered_once = true;
     }
-    cpu_tracer_.Update(scene);
+    if (!done || !app_settings.render_once) {
+      cpu_tracer_.Update(scene);
+    }
 
     static bool saved = false;
     if (!saved && done && app_settings.save_after_render_once) {

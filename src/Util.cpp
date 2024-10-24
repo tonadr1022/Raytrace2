@@ -43,6 +43,12 @@ void WriteImage(uint32_t tex, uint32_t num_channels, const std::string& out_path
   std::vector<uint8_t> pixels(static_cast<size_t>(w) * h * num_channels);
   glGetTextureImage(tex, mip_level, num_channels == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE,
                     sizeof(uint8_t) * pixels.size(), pixels.data());
+  // Apply gamma correction (inverse of 2.2 gamma correction)
+  for (unsigned char& pixel : pixels) {
+    float value = pixel / 255.0f;
+    value = pow(value, 1.0f / 2.2f);  // Convert sRGB to linear
+    pixel = static_cast<uint8_t>(value * 255.0f);
+  }
   stbi_write_png(out_path.c_str(), w, h, num_channels, pixels.data(), w * num_channels);
 }
 

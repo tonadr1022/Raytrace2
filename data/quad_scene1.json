@@ -3,6 +3,7 @@
     "fov": 80,
     "center": [0, 0, 9]
   },
+  "background_color": [0.7, 0.8, 1.0],
   "textures": [],
   "materials": [
     {

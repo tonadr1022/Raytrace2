@@ -11,8 +11,7 @@ BVHNode::BVHNode(std::vector<std::shared_ptr<Hittable>>& objects, size_t start, 
   using Comparator = bool (*)(const std::shared_ptr<Hittable>&, const std::shared_ptr<Hittable>&);
   std::array<Comparator, 3> comparators = {BoxCompareX, BoxCompareY, BoxCompareZ};
   size_t object_span = end - start;
-  aabb_.min = glm::vec3{kInfinity};
-  aabb_.max = glm::vec3{-kInfinity};
+
   for (size_t object_idx = start; object_idx < end; object_idx++) {
     aabb_ = AABB{aabb_, objects[object_idx]->GetAABB()};
   }
@@ -33,7 +32,9 @@ BVHNode::BVHNode(std::vector<std::shared_ptr<Hittable>>& objects, size_t start, 
 
 bool BVHNode::BoxCompare(const std::shared_ptr<Hittable>& a, const std::shared_ptr<Hittable>& b,
                          int axis_idx) {
-  return a->GetAABB().min[axis_idx] < b->GetAABB().min[axis_idx];
+  auto a_ai = a->GetAABB().AxisInterval(axis_idx);
+  auto b_ai = b->GetAABB().AxisInterval(axis_idx);
+  return a_ai.min < b_ai.min;
 }
 
 bool BVHNode::BoxCompareX(const std::shared_ptr<Hittable>& a, const std::shared_ptr<Hittable>& b) {

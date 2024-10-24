@@ -183,6 +183,13 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
     scene.hittable_list.Add(
         std::make_shared<cpu::Quad>(q, u, v, id_to_arr_idx[json_quad.value("material_id", 0)]));
   }
+  auto json_boxes = primitives["boxes"];
+  for (const nlohmann::json& json_box : json_boxes) {
+    auto a = ToVec3(json_box.value("a", std::array<float, 3>{0, 0, 0}));
+    auto b = ToVec3(json_box.value("b", std::array<float, 3>{1, 1, 1}));
+    scene.hittable_list.Add(
+        std::make_shared<cpu::HittableList>(cpu::MakeBox(a, b, json_box.value("material_id", 0))));
+  }
 
   if (obj["camera"].is_object()) {
     auto cam = obj["camera"];

@@ -9,58 +9,68 @@ namespace raytrace2::cpu {
 class AABB {
  public:
   AABB() = default;
-  AABB(const vec3& min, const vec3& max) : min(min), max(max) { PadToMinimums(); }
-  AABB(const AABB& a, const AABB& b) : min(glm::min(a.min, b.min)), max(glm::max(a.max, b.max)) {
+  AABB(const vec3& a, const vec3& b) {
+    x = (a[0] <= b[0]) ? Interval{a[0], b[0]} : Interval{b[0], a[0]};
+    y = (a[1] <= b[1]) ? Interval{a[1], b[1]} : Interval{b[1], a[1]};
+    z = (a[2] <= b[2]) ? Interval{a[2], b[2]} : Interval{b[2], a[2]};
     PadToMinimums();
+  }
+  AABB(const AABB& a, const AABB& b) : x(Interval{a.x, b.x}), y({a.y, b.y}), z({a.z, b.z}) {
+    PadToMinimums();
+  }
+
+  [[nodiscard]] const Interval& AxisInterval(int n) const {
+    if (n == 1) return y;
+    if (n == 2) return z;
+    return x;
   }
 
   [[nodiscard]] bool Hit(const Ray& r, Interval ray_t) const {
     for (int axis = 0; axis < 3; axis++) {
-      if (r.direction[axis] == 0.0f) {
-        if (r.origin[axis] < min[axis] || r.origin[axis] > max[axis]) {
-          return false;
-        }
-        continue;
-      }
-      float inv_direction = 1.0f / r.direction[axis];
-      float t0 = (min[axis] - r.origin[axis]) * inv_direction;
-      float t1 = (max[axis] - r.origin[axis]) * inv_direction;
+      const Interval& ax = AxisInterval(axis);
+      const float ad_inv = 1.f / r.direction[axis];
+      auto t0 = (ax.min - r.origin[axis]) * ad_inv;
+      auto t1 = (ax.max - r.origin[axis]) * ad_inv;
+
       if (t1 < t0) std::swap(t0, t1);
       ray_t.min = glm::max(t0, ray_t.min);
       ray_t.max = glm::min(t1, ray_t.max);
       if (ray_t.max <= ray_t.min) return false;
     }
     return true;
+    // for (int axis = 0; axis < 3; axis++) {
+    //   if (r.direction[axis] == 0.0f) {
+    //     if (r.origin[axis] < min[axis] || r.origin[axis] > max[axis]) {
+    //       return false;
+    //     }
+    //     continue;
+    //   }
+    //   float inv_direction = 1.0f / r.direction[axis];
+    //   float t0 = (min[axis] - r.origin[axis]) * inv_direction;
+    //   float t1 = (max[axis] - r.origin[axis]) * inv_direction;
+    //   if (t1 < t0) std::swap(t0, t1);
+    //   ray_t.min = glm::max(t0, ray_t.min);
+    //   ray_t.max = glm::min(t1, ray_t.max);
+    //   if (ray_t.max <= ray_t.min) return false;
+    // }
+    // return true;
   }
 
   [[nodiscard]] int LongestAxis() const {
-    float x_size = std::fabs(max.x - min.x);
-    float y_size = std::fabs(max.y - min.y);
-    float z_size = std::fabs(max.z - min.z);
-    if (x_size > y_size) {
-      return x_size > z_size ? 0 : 2;
+    if (x.Size() > y.Size()) {
+      return x.Size() > z.Size() ? 0 : 2;
     }
-    return y_size > z_size ? 1 : 2;
+    return y.Size() > z.Size() ? 1 : 2;
   }
-  vec3 min{kInfinity}, max{-kInfinity};
+  Interval x, y, z;
 
  private:
   void PadToMinimums() {
     // Adjust aabb so no side is narrower than delta, padding if necessary
     constexpr const float kDelta = 0.0001f;
-    constexpr const float kHalfDelta = kDelta / 2.f;
-    if (std::fabs(max.x - min.x) < kDelta) {
-      max.x += kHalfDelta;
-      min.x -= kHalfDelta;
-    }
-    if (std::fabs(max.y - min.y) < kDelta) {
-      max.y += kHalfDelta;
-      min.y -= kHalfDelta;
-    }
-    if (std::fabs(max.z - min.z) < kDelta) {
-      max.z += kHalfDelta;
-      min.z -= kHalfDelta;
-    }
+    if (x.Size() < kDelta) x = x.Expand(kDelta);
+    if (y.Size() < kDelta) y = y.Expand(kDelta);
+    if (z.Size() < kDelta) z = z.Expand(kDelta);
   }
 };
 }  // namespace raytrace2::cpu

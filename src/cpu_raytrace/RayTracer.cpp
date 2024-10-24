@@ -13,49 +13,35 @@ namespace raytrace2::cpu {
 
 namespace {
 
-constexpr int kMaxDepth = 500;
-
 color ToColor(const vec3& col) {
   return color{floor(col.x * 255.999), floor(col.y * 255.999), floor(col.z * 255.999), 255};
 }
 
-float col = 0.5f;
 vec3 RayColor(const cpu::Ray& r, int depth, const Scene& scene) {
-  vec3 attenuation{1};
-  Ray scattered = r;
-  while (depth > 0) {
-    cpu::HitRecord rec;
-    if (scene.hittable_list.Hit(scene, scattered, cpu::Interval{0.001, kInfinity}, rec)) {
-      vec3 local_attenuation;
-      EASSERT(rec.material != nullptr);
-      vec3 emission_color = std::visit(
-          [&](auto&& material) { return material.Emit(scene.textures, rec.uv, rec.point); },
-          *rec.material);
-      bool is_scattered = std::visit(
-          [&](auto&& material) {
-            return material.Scatter(scene.textures, scattered, rec, local_attenuation, scattered);
-          },
-          *rec.material);
-      if (is_scattered) {
-        attenuation *= (local_attenuation);
-        attenuation += emission_color;
-      } else {
-        // no scatter, so absorb ray/return emission color (0 if not emissive)
-        return emission_color * attenuation;
-      }
-    } else {
-      // calc background and break if no hit
-      // vec3 unit_dir = glm::normalize(scattered.direction);
-      // float a = 0.5f * (unit_dir.y + 1.0);
-      // attenuation *= (1.0f - a) * vec3{1, 1, 1} + a * vec3{0.5, 0.7, 1.0};
-      // TODO: parameterize
-      attenuation *= scene.background_color;
-      break;
-    }
+  if (depth <= 0) return {0, 0, 0};
 
-    depth--;
+  HitRecord rec;
+
+  if (!scene.hittable_list.Hit(scene, r, cpu::Interval{0.001, kInfinity}, rec)) {
+    return scene.background_color;
   }
-  return attenuation;
+
+  Ray scattered;
+  vec3 attenuation;
+
+  vec3 emission_color =
+      std::visit([&](auto&& material) { return material.Emit(scene.textures, rec.uv, rec.point); },
+                 *rec.material);
+
+  bool is_scattered = std::visit(
+      [&](auto&& material) {
+        return material.Scatter(scene.textures, r, rec, attenuation, scattered);
+      },
+      *rec.material);
+  if (is_scattered) {
+    return attenuation * RayColor(scattered, depth - 1, scene) + emission_color;
+  }
+  return emission_color;
 }
 
 }  // namespace
@@ -69,7 +55,7 @@ void RayTracer::Reset() {
 void RayTracer::Update(const Scene& scene) {
   frame_idx_++;
   auto per_pixel = [this, &scene](const glm::ivec3& idx) {
-    vec3 ray_color = math::LinearToGamma(RayColor(camera->GetRay(idx.x, idx.y), kMaxDepth, scene));
+    vec3 ray_color = math::LinearToGamma(RayColor(camera->GetRay(idx.x, idx.y), max_depth, scene));
     accumulation_data_[idx.z] += ray_color;
     pixels_[idx.z] =
         ToColor(glm::clamp(accumulation_data_[idx.z] / static_cast<float>(frame_idx_), 0.0f, 1.0f));
@@ -89,9 +75,6 @@ bool RayTracer::OnEvent(const SDL_Event& event) {
 void RayTracer::OnImGui() {
   ImGui::Begin("Settings");
   if (ImGui::Button("Reset")) {
-    Reset();
-  }
-  if (ImGui::SliderFloat("Col", &col, 0.0f, 1.0f)) {
     Reset();
   }
   ImGui::End();

@@ -45,6 +45,7 @@ struct RayTracer {
   void Reset();
 
   Camera* camera{nullptr};
+  size_t max_depth{50};
 
  private:
   gl::Texture output_tex_;
