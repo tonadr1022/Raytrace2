@@ -19,6 +19,10 @@ class AABB {
     PadToMinimums();
   }
 
+  AABB(const Interval& x, const Interval& y, const Interval& z) : x(x), y(y), z(z) {
+    PadToMinimums();
+  }
+
   [[nodiscard]] const Interval& AxisInterval(int n) const {
     const Interval* axes[3] = {&x, &y, &z};
     return *axes[n];
@@ -30,7 +34,7 @@ class AABB {
   [[nodiscard]] bool Hit(const Ray& r, Interval ray_t) const {
     for (int axis = 0; axis < 3; axis++) {
       const Interval& ax = AxisInterval(axis);
-      const float ad_inv = 1.f / r.direction[axis];
+      const real ad_inv = 1.f / r.direction[axis];
       auto t0 = (ax.min - r.origin[axis]) * ad_inv;
       auto t1 = (ax.max - r.origin[axis]) * ad_inv;
 
@@ -53,10 +57,16 @@ class AABB {
  private:
   void PadToMinimums() {
     // Adjust aabb so no side is narrower than delta, padding if necessary
-    constexpr const float kDelta = 0.0001f;
+    constexpr const real kDelta = 0.0001f;
     if (x.Size() < kDelta) x = x.Expand(kDelta);
     if (y.Size() < kDelta) y = y.Expand(kDelta);
     if (z.Size() < kDelta) z = z.Expand(kDelta);
   }
 };
+
+inline AABB operator+(const AABB& bbox, const vec3& offset) {
+  return {bbox.x + offset.x, bbox.y + offset.y, bbox.z + offset.z};
+}
+
+inline AABB operator+(const vec3& offset, const AABB& bbox) { return bbox + offset; }
 }  // namespace raytrace2::cpu

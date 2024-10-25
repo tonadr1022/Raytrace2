@@ -29,13 +29,13 @@ auto SchlickReflectance(auto cosine, auto refraction_index) {
 bool MaterialDielectric::Scatter(const texture::TexArray&, const Ray& r_in, const HitRecord& rec,
                                  vec3& attenuation, Ray& scattered) const {
   attenuation = vec3(1.0f);
-  float ri = rec.front_face ? (1.0 / refraction_index) : refraction_index;
+  real ri = rec.front_face ? (1.0 / refraction_index) : refraction_index;
   vec3 unit_dir = glm::normalize(r_in.direction);
-  float cos_theta = glm::min(glm::dot(-unit_dir, rec.normal), 1.0f);
-  float sin_theta = glm::sqrt(1.f - cos_theta * cos_theta);
+  real cos_theta = glm::min(glm::dot(-unit_dir, rec.normal), static_cast<real>(1.0));
+  real sin_theta = glm::sqrt(1.f - cos_theta * cos_theta);
   bool cannot_refract = ri * sin_theta > 1.0;
   vec3 direction;
-  if (cannot_refract || SchlickReflectance(cos_theta, ri) > math::RandFloat()) {
+  if (cannot_refract || SchlickReflectance(cos_theta, ri) > math::RandReal()) {
     direction = math::Reflect(unit_dir, rec.normal);
   } else {
     direction = math::Refract(unit_dir, rec.normal, ri);

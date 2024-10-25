@@ -27,7 +27,7 @@ struct Quad : public Hittable {
 
   AABB aabb;
   vec3 q, u, v, w, normal;
-  float d;
+  real d;
   uint32_t material_handle;
 };
 

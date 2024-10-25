@@ -7,11 +7,11 @@ namespace raytrace2::cpu {
 PerlinNoiseGen::PerlinNoiseGen(int point_count) : point_count_(point_count) { Init(); }
 PerlinNoiseGen::PerlinNoiseGen() { Init(); }
 
-float PerlinInterp(vec3 c[2][2][2], float u, float v, float w) {
-  float uu = u * u * (3 - 2 * u);
-  float vv = v * v * (3 - 2 * v);
-  float ww = w * w * (3 - 2 * w);
-  float accum = 0;
+real PerlinInterp(vec3 c[2][2][2], real u, real v, real w) {
+  real uu = u * u * (3 - 2 * u);
+  real vv = v * v * (3 - 2 * v);
+  real ww = w * w * (3 - 2 * w);
+  real accum = 0;
 
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {
@@ -25,8 +25,8 @@ float PerlinInterp(vec3 c[2][2][2], float u, float v, float w) {
   return accum;
 }
 
-float TrilinearInterp(float c[2][2][2], float u, float v, float w) {
-  float accum = 0.0;
+real TrilinearInterp(real c[2][2][2], real u, real v, real w) {
+  real accum = 0.0;
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {
       for (int k = 0; k < 2; k++) {
@@ -49,12 +49,12 @@ void PerlinNoiseGen::Init() {
   GeneratePerm(perm_z_);
 }
 
-float PerlinNoiseGen::Turb(const vec3& p) const { return Turb(p, 7); }
+real PerlinNoiseGen::Turb(const vec3& p) const { return Turb(p, 7); }
 
-float PerlinNoiseGen::Turb(const vec3& p, int depth) const {
-  float accum = 0.f;
+real PerlinNoiseGen::Turb(const vec3& p, int depth) const {
+  real accum = 0.f;
   vec3 temp_p = p;
-  float weight = 1.0f;
+  real weight = 1.0f;
   for (int i = 0; i < depth; i++) {
     accum += weight * Noise(temp_p);
     weight *= 0.5;
@@ -63,10 +63,10 @@ float PerlinNoiseGen::Turb(const vec3& p, int depth) const {
   return std::fabs(accum);
 }
 
-float PerlinNoiseGen::Noise(const vec3& p) const {
-  float u = p.x - std::floor(p.x);
-  float v = p.y - std::floor(p.y);
-  float w = p.z - std::floor(p.z);
+real PerlinNoiseGen::Noise(const vec3& p) const {
+  real u = p.x - std::floor(p.x);
+  real v = p.y - std::floor(p.y);
+  real w = p.z - std::floor(p.z);
   vec3 c[2][2][2];
   // u = u * u * (3 - 2 * u);
   // v = v * v * (3 - 2 * v);

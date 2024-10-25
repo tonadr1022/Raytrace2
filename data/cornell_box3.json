@@ -33,20 +33,20 @@
     "boxes": [
       {
         "transform": {
-          "translation": [130, 0, 65],
-          "rotation": [-18, 0, 1, 0]
-        },
-        "a": [0, 0, 0],
-        "b": [165, 165, 165],
-        "material_id": 1
-      },
-      {
-        "transform": {
           "translation": [265, 0, 295],
           "rotation": [15, 0, 1, 0]
         },
         "a": [0, 0, 0],
         "b": [165, 330, 165],
+        "material_id": 1
+      },
+      {
+        "transform": {
+          "translation": [130, 0, 65],
+          "rotation": [-18, 0, 1, 0]
+        },
+        "a": [0, 0, 0],
+        "b": [165, 165, 165],
         "material_id": 1
       }
     ],

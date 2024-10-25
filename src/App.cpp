@@ -73,20 +73,20 @@ glm::ivec2 viewport_dims;
 //   scene.hittable_list.Add(std::make_shared<cpu::Sphere>(vec3{0, -1000, 0}, 1000, 0));
 //   for (int a = -11; a < 11; a++) {
 //     for (int b = -11; b < 11; b++) {
-//       float choose_mat = cpu::math::RandFloat();
-//       vec3 center{a + 0.9 * cpu::math::RandFloat(), 0.2, b + 0.9 * cpu::math::RandFloat()};
+//       real choose_mat = cpu::math::RandFloat();
+//       vec3 center{a + 0.9 * cpu::math::Randreal(), 0.2, b + 0.9 * cpu::math::RandFloat()};
 //       if (glm::length(center - vec3(4, 0.2, 0)) > 0.9) {
 //         cpu::MaterialVariant mat;
 //         if (choose_mat < 0.8) {
 //           mat = cpu::MaterialLambertian{.albedo = cpu::math::RandVec3() * cpu::math::RandVec3()};
 //         } else if (choose_mat < 0.95) {
 //           mat = cpu::MaterialMetal{.albedo = cpu::math::RandVec3(0.5, 1),
-//                                    .fuzz = cpu::math::RandFloat(0, 0.5)};
+//                                    .fuzz = cpu::math::Randreal(0, 0.5)};
 //         } else {
 //           mat = cpu::MaterialDielectric{.refraction_index = 1.5};
 //         }
 //         scene.hittable_list.Add(
-//             std::make_shared<cpu::Sphere>(center, vec3{0, cpu::math::RandFloat(0, 0.5), 0}, 0.2,
+//             std::make_shared<cpu::Sphere>(center, vec3{0, cpu::math::Randreal(0, 0.5), 0}, 0.2,
 //                                           static_cast<uint32_t>(scene.materials.size())));
 //         scene.materials.emplace_back(mat);
 //       }
@@ -129,9 +129,9 @@ void BindAndSetUniforms(cpu::Camera& cam, const cpu::Scene& scene) {
   shader.SetVec3("pixel00_loc", cam.pixel00_loc_);
   shader.SetVec3("pixel_delta_u", cam.pixel_delta_u_);
   shader.SetFloat("defocus_angle", cam.defocus_angle_);
-  // shader.SetFloat("focus_dist", cam.focus_dist_);
+  // shader.Setreal("focus_dist", cam.focus_dist_);
   shader.SetVec2("resolution", cam.dims_);
-  shader.SetFloat("rand_seed", cpu::math::RandFloat());
+  shader.SetFloat("rand_seed", cpu::math::RandReal());
   shader.SetVec3("viewport_upper_left", cam.viewport_upper_left_);
   shader.SetVec3("cam_center", cam.center_);
   // shader.SetVec3("cam_lookat", cam.lookat_);
