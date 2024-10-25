@@ -78,9 +78,10 @@ std::shared_ptr<cpu::Hittable> ParseTransform(const std::shared_ptr<cpu::Hittabl
       if (transform_json.contains("rotation")) {
         has_transform = true;
         vec4 angle_axis =
-            ToVec4(transform_json.value("rotation", std::array<float, 4>({0, 0, 0, 0})));
+            ToVec4(transform_json.value("rotation", std::array<float, 4>({0, 0, 1, 0})));
         rotation = glm::angleAxis(glm::radians(angle_axis[0]),
                                   vec3{angle_axis[1], angle_axis[2], angle_axis[3]});
+        // return std::make_shared<cpu::RotateY>(obj, angle_axis[0]);
       }
       vec3 scale{1};
       if (transform_json.contains("scale")) {
