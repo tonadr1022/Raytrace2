@@ -17,12 +17,12 @@ struct SolidColor {
 };
 
 struct Checker {
-  Checker(float scale, uint32_t even_tex_idx, uint32_t odd_tex_idx)
+  Checker(real scale, uint32_t even_tex_idx, uint32_t odd_tex_idx)
       : inv_scale(1.f / scale), even_tex_idx(even_tex_idx), odd_tex_idx(odd_tex_idx) {}
   Checker() = default;
 
   [[nodiscard]] vec3 Value(const TexArray& tex_arr, vec2 uv, const vec3& p) const;
-  float inv_scale{1};
+  real inv_scale{1};
   uint32_t even_tex_idx{};
   uint32_t odd_tex_idx{};
 };
@@ -32,7 +32,7 @@ struct Noise {
   [[nodiscard]] vec3 Value(const TexArray& tex_arr, vec2 uv, const vec3& p) const;
   PerlinNoiseGen noise;
   vec3 albedo{1};
-  float scale{1};
+  real scale{1};
   NoiseType noise_type{NoiseType::kMarble};
 
  private:

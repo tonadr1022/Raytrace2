@@ -30,13 +30,13 @@ struct Material {
 
 struct alignas(16) MaterialMetal : public Material<MaterialMetal> {
   vec3 albedo;
-  float fuzz{0};
+  real fuzz{0};
   bool Scatter(const texture::TexArray& tex_arr, const Ray& r_in, const HitRecord& rec,
                vec3& attenuation, Ray& scattered) const;
 };
 
 struct alignas(16) MaterialDielectric : public Material<MaterialMetal> {
-  float refraction_index;
+  real refraction_index;
   bool Scatter(const texture::TexArray& tex_arr, const Ray& r_in, const HitRecord& rec,
                vec3& attenuation, Ray& scattered) const;
 };

@@ -57,8 +57,8 @@ void RayTracer::Update(const Scene& scene) {
   auto per_pixel = [this, &scene](const glm::ivec3& idx) {
     vec3 ray_color = math::LinearToGamma(RayColor(camera->GetRay(idx.x, idx.y), max_depth, scene));
     accumulation_data_[idx.z] += ray_color;
-    pixels_[idx.z] =
-        ToColor(glm::clamp(accumulation_data_[idx.z] / static_cast<float>(frame_idx_), 0.0f, 1.0f));
+    pixels_[idx.z] = ToColor(glm::clamp(accumulation_data_[idx.z] / static_cast<real>(frame_idx_),
+                                        static_cast<real>(0.0), static_cast<real>(1.0)));
   };
 
   std::for_each(std::execution::par, iter_.begin(), iter_.end(), per_pixel);

@@ -37,9 +37,9 @@ bool Sphere::Hit(const Scene& scene, const Ray& r, Interval ray_t, HitRecord& re
 }
 
 vec2 Sphere::GetUV(const vec3& p) {
-  float theta = glm::acos(-p.y);
-  float phi = std::atan2(-p.z, p.x) + std::numbers::pi_v<float>;
-  return {phi / (2.f * std::numbers::pi_v<float>), theta / std::numbers::pi_v<float>};
+  real theta = glm::acos(-p.y);
+  real phi = std::atan2(-p.z, p.x) + std::numbers::pi_v<real>;
+  return {phi / (2.f * std::numbers::pi_v<real>), theta / std::numbers::pi_v<real>};
 }
 
 }  // namespace raytrace2::cpu
