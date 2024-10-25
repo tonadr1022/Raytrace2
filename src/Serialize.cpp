@@ -1,5 +1,7 @@
 #include "Serialize.hpp"
 
+#include <glm/ext/quaternion_float.hpp>
+#include <glm/ext/quaternion_trigonometric.hpp>
 #include <limits>
 #include <nlohmann/json.hpp>
 
@@ -10,6 +12,7 @@
 #include "cpu_raytrace/BVH.hpp"
 #include "cpu_raytrace/Camera.hpp"
 #include "cpu_raytrace/Fwd.hpp"
+#include "cpu_raytrace/Hittable.hpp"
 #include "cpu_raytrace/HittableList.hpp"
 #include "cpu_raytrace/Material.hpp"
 #include "cpu_raytrace/Quad.hpp"
@@ -17,11 +20,13 @@
 #include "cpu_raytrace/Scene.hpp"
 #include "cpu_raytrace/Sphere.hpp"
 #include "cpu_raytrace/Texture.hpp"
+#include "cpu_raytrace/Transform.hpp"
 
 namespace raytrace2::serialize {
 
 namespace {
 vec3 ToVec3(const std::array<float, 3>& arr) { return {arr[0], arr[1], arr[2]}; }
+vec4 ToVec4(const std::array<float, 4>& arr) { return {arr[0], arr[1], arr[2], arr[3]}; }
 std::array<float, 3> ToVec3Arr(const vec3& vec) { return {vec[0], vec[1], vec[2]}; }
 }  // namespace
 
@@ -56,6 +61,41 @@ AppSettings LoadAppSettings(const std::string& filepath) {
   settings.render_once = obj.value("render_once", false);
   settings.save_after_render_once = obj.value("save_after_render_once", false);
   return settings;
+}
+
+std::shared_ptr<cpu::Hittable> ParseTransform(const std::shared_ptr<cpu::Hittable>& obj,
+                                              const nlohmann::json& json_obj) {
+  bool has_transform = false;
+  if (json_obj.contains("transform")) {
+    const auto& transform_json = json_obj["transform"];
+    if (transform_json.is_object()) {
+      vec3 translation{0};
+      if (transform_json.contains("translation")) {
+        has_transform = true;
+        translation = ToVec3(transform_json.value("translation", std::array<float, 3>{0, 0, 0}));
+      }
+      glm::quat rotation;
+      if (transform_json.contains("rotation")) {
+        has_transform = true;
+        vec4 angle_axis =
+            ToVec4(transform_json.value("rotation", std::array<float, 4>({0, 0, 0, 0})));
+        rotation = glm::angleAxis(glm::radians(angle_axis[0]),
+                                  vec3{angle_axis[1], angle_axis[2], angle_axis[3]});
+      }
+      vec3 scale{1};
+      if (transform_json.contains("scale")) {
+        has_transform = true;
+        scale = ToVec3(transform_json.value("scale", std::array<float, 3>({1, 1, 1})));
+      }
+      if (has_transform) {
+        return std::make_shared<cpu::Transform>(obj, translation, rotation, scale);
+      }
+    } else {
+      // TODO: make accessible here for better usability
+      // print_scene_error("transform key must be an object");
+    }
+  }
+  return obj;
 }
 
 std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
@@ -169,10 +209,11 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
     std::array<float, 3> displacement =
         json_sphere.value("displacement", std::array<float, 3>{0, 0, 0});
     float radius = json_sphere.value("radius", 0.5);
-    scene.hittable_list.Add(
+    auto sphere =
         std::make_shared<cpu::Sphere>(vec3{center[0], center[1], center[2]},
                                       vec3{displacement[0], displacement[1], displacement[2]},
-                                      radius, id_to_arr_idx[json_sphere.value("material_id", 0)]));
+                                      radius, id_to_arr_idx[json_sphere.value("material_id", 0)]);
+    scene.hittable_list.Add(ParseTransform(sphere, json_sphere));
   }
 
   auto json_quads = primitives["quads"];
@@ -180,15 +221,18 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
     auto q = ToVec3(json_quad.value("q", std::array<float, 3>{0, 0, 0}));
     auto u = ToVec3(json_quad.value("u", std::array<float, 3>{1, 0, 0}));
     auto v = ToVec3(json_quad.value("v", std::array<float, 3>{0, 0, 1}));
-    scene.hittable_list.Add(
-        std::make_shared<cpu::Quad>(q, u, v, id_to_arr_idx[json_quad.value("material_id", 0)]));
+
+    auto quad =
+        std::make_shared<cpu::Quad>(q, u, v, id_to_arr_idx[json_quad.value("material_id", 0)]);
+    scene.hittable_list.Add(ParseTransform(quad, json_quad));
   }
   auto json_boxes = primitives["boxes"];
   for (const nlohmann::json& json_box : json_boxes) {
     auto a = ToVec3(json_box.value("a", std::array<float, 3>{0, 0, 0}));
     auto b = ToVec3(json_box.value("b", std::array<float, 3>{1, 1, 1}));
-    scene.hittable_list.Add(
-        std::make_shared<cpu::HittableList>(cpu::MakeBox(a, b, json_box.value("material_id", 0))));
+    auto box =
+        std::make_shared<cpu::HittableList>(cpu::MakeBox(a, b, json_box.value("material_id", 0)));
+    scene.hittable_list.Add(ParseTransform(box, json_box));
   }
 
   if (obj["camera"].is_object()) {

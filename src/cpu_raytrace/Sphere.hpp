@@ -6,6 +6,7 @@
 #include "cpu_raytrace/HitRecord.hpp"
 #include "cpu_raytrace/Hittable.hpp"
 #include "cpu_raytrace/Interval.hpp"
+#include "cpu_raytrace/Transform.hpp"
 
 namespace raytrace2::cpu {
 struct Scene;

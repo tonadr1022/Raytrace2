@@ -1,8 +1,11 @@
 #pragma once
 
+#include "Defs.hpp"
 #include "cpu_raytrace/AABB.hpp"
 #include "cpu_raytrace/Hittable.hpp"
 #include "cpu_raytrace/HittableList.hpp"
+#include "cpu_raytrace/Transform.hpp"
+
 namespace raytrace2::cpu {
 
 struct Scene;

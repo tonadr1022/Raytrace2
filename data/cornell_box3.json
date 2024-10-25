@@ -32,6 +32,9 @@
   "primitives": {
     "boxes": [
       {
+        "transform": {
+          "translation": [0, 0, 0]
+        },
         "a": [130, 0, 65],
         "b": [295, 165, 230],
         "material_id": 1
