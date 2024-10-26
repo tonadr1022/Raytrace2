@@ -1,6 +1,7 @@
 #include "Util.hpp"
 
 #include <fstream>
+#include <glm/mat4x4.hpp>
 #include <nlohmann/json.hpp>
 
 #pragma clang diagnostic push
@@ -63,4 +64,16 @@ std::string CurrentDateTime() {
 
   return buf;
 }
+
+void PrintMatrix(mat4& matrix) {
+  std::cout << std::fixed << std::setprecision(4);  // Optional: format for consistent precision
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      std::cout << std::setw(10) << matrix[i][j] << " ";
+    }
+    std::cout << std::endl;
+  }
+  std::cout << std::endl;
+}
+
 }  // namespace raytrace2::util

@@ -1,6 +1,7 @@
 #include "Transform.hpp"
 
 #include "Defs.hpp"
+#include "Util.hpp"
 #include "cpu_raytrace/HitRecord.hpp"
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -10,36 +11,29 @@
 
 namespace raytrace2::cpu {
 
-Ray Transform::WorldToModel(const Ray& r) const {
+Ray TransformedHittable::WorldToModel(const Ray& r) const {
   // transform origin from world to model space
   vec3 transformed_origin = vec3(inv_model * vec4(r.origin, 1));
   // transform direction to model space without translation component
   vec3 transformed_dir = glm::normalize(mat3(inv_model) * r.direction);
   return Ray{.origin = transformed_origin, .direction = transformed_dir, .time = r.time};
 }
+bool isIdentityMatrix(const glm::mat4& matrix, float epsilon = 1e-6f) {
+  // Identity matrix for reference
+  auto identity = glm::mat4(1.0f);
 
-Transform::Transform(const std::shared_ptr<Hittable>& obj, const vec3& translation,
-                     const quat& rotation, const vec3& scale)
-    : obj(obj), translation(translation), rotation(rotation), scale(scale) {
-  Init();
-}
-
-bool Transform::Hit(const Scene& scene, const Ray& r, Interval ray_t, HitRecord& rec) const {
-  // transform ray to model space, hit object in model space, transform hit point and normal back to
-  // world space
-
-  Ray model_space_ray = WorldToModel(r);
-  EASSERT(obj != nullptr);
-  bool hit = obj->Hit(scene, model_space_ray, ray_t, rec);
-  if (!hit) return false;
-  // transform back to world space
-  rec.point = vec3(model * vec4(rec.point, 1.f));
-  rec.normal = glm::normalize(normal_mat * rec.normal);
+  // Check each element for near-equality within the tolerance epsilon
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      if (std::abs(matrix[i][j] - identity[i][j]) > epsilon) {
+        return false;
+      }
+    }
+  }
   return true;
 }
 
-void Transform::Init() {
-  model = glm::translate(mat4(1), translation) * glm::toMat4(rotation) * glm::scale(mat4(1), scale);
+void TransformedHittable::Init() {
   inv_model = glm::inverse(model);
   normal_mat = glm::transpose(glm::inverse(model));
 
@@ -67,6 +61,30 @@ void Transform::Init() {
   }
 
   aabb_ = AABB{new_min, new_max};
+}
+TransformedHittable::TransformedHittable(const std::shared_ptr<Hittable>& obj, mat4 transform)
+    : model(transform), obj(obj) {
+  Init();
+}
+TransformedHittable::TransformedHittable(const std::shared_ptr<Hittable>& obj,
+                                         const Transform& transform)
+    : model(transform.model), obj(obj) {
+  Init();
+}
+
+bool TransformedHittable::Hit(const Scene& scene, const Ray& r, Interval ray_t,
+                              HitRecord& rec) const {
+  // transform ray to model space, hit object in model space, transform hit point and normal back to
+  // world space
+
+  Ray model_space_ray = WorldToModel(r);
+  EASSERT(obj != nullptr);
+  bool hit = obj->Hit(scene, model_space_ray, ray_t, rec);
+  if (!hit) return false;
+  // transform back to world space
+  rec.point = vec3(model * vec4(rec.point, 1.f));
+  rec.normal = glm::normalize(normal_mat * rec.normal);
+  return true;
 }
 
 }  // namespace raytrace2::cpu
