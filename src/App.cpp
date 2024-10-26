@@ -163,7 +163,8 @@ void App::Run(int argc, char* argv[]) {
   }
   AppSettings app_settings = serialize::LoadAppSettings(GET_PATH("data/settings.json"));
   glm::ivec2 dims{1600, 900};
-  auto scene_opt = serialize::LoadScene(full_scene_path);
+  serialize::SceneLoader loader;
+  auto scene_opt = loader.LoadScene(full_scene_path);
   if (!scene_opt.has_value()) {
     exit(1);
   }
@@ -255,18 +256,13 @@ void App::Run(int argc, char* argv[]) {
     ImGui::InputText("##Scene Name", scene_name, 100);
     ImGui::SameLine();
     if (ImGui::Button("Load Scene")) {
-      auto scene_opt = serialize::LoadScene(GET_PATH("data/") + std::string(scene_name));
+      serialize::SceneLoader loader;
+      auto scene_opt = loader.LoadScene(GET_PATH("data/") + std::string(scene_name));
       if (scene_opt.has_value()) {
         scene = scene_opt.value();
         cpu_tracer_.Reset();
       }
     }
-    ImGui::InputText("##Copy File Scene Name", copy_file_scene_name, 100);
-    ImGui::SameLine();
-    if (ImGui::Button("Copy Scene To File")) {
-      serialize::WriteScene(scene, GET_PATH("data/") + std::string(copy_file_scene_name));
-    }
-    ImGui::End();
 
     cpu_tracer_.OnImGui();
 

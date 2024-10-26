@@ -1,6 +1,7 @@
 #include "Serialize.hpp"
 
 #include <limits>
+#include <memory>
 #include <nlohmann/json.hpp>
 
 #include "Defs.hpp"
@@ -14,7 +15,6 @@
 #include "cpu_raytrace/HittableList.hpp"
 #include "cpu_raytrace/Material.hpp"
 #include "cpu_raytrace/Quad.hpp"
-#include "cpu_raytrace/Ray.hpp"
 #include "cpu_raytrace/Scene.hpp"
 #include "cpu_raytrace/Sphere.hpp"
 #include "cpu_raytrace/Texture.hpp"
@@ -61,47 +61,137 @@ AppSettings LoadAppSettings(const std::string& filepath) {
   return settings;
 }
 
-std::shared_ptr<cpu::Hittable> ParseTransform(const std::shared_ptr<cpu::Hittable>& obj,
-                                              const nlohmann::json& json_obj) {
-  bool has_transform = false;
-  if (json_obj.contains("transform")) {
-    const auto& transform_json = json_obj["transform"];
+// std::shared_ptr<cpu::Hittable> ParseTransform(const std::shared_ptr<cpu::Hittable>& obj,
+//                                               const nlohmann::json& json_obj) {
+//   bool has_transform = false;
+//   if (json_obj.contains("transform")) {
+//     const auto& transform_json = json_obj["transform"];
+//     if (transform_json.is_object()) {
+//       vec3 translation{0};
+//       if (transform_json.contains("translation")) {
+//         has_transform = true;
+//         translation = ToVec3(transform_json.value("translation", std::array<real, 3>{0, 0, 0}));
+//       }
+//       quat rotation;
+//       if (transform_json.contains("rotation")) {
+//         has_transform = true;
+//         vec4 angle_axis =
+//             ToVec4(transform_json.value("rotation", std::array<real, 4>({0, 0, 1, 0})));
+//         rotation = glm::angleAxis(glm::radians(angle_axis[0]),
+//                                   vec3{angle_axis[1], angle_axis[2], angle_axis[3]});
+//       }
+//       vec3 scale{1};
+//       if (transform_json.contains("scale")) {
+//         has_transform = true;
+//         scale = ToVec3(transform_json.value("scale", std::array<real, 3>({1, 1, 1})));
+//       }
+//       if (has_transform) {
+//         return std::make_shared<cpu::TransformedHittable>(obj, translation, rotation, scale);
+//       }
+//     } else {
+//       // TODO: make accessible here for better usability
+//       // print_scene_error("transform key must be an object");
+//     }
+//   }
+//   return obj;
+// }
+
+void SceneLoader::PrintSceneError(const std::string& msg) const {
+  std::cerr << "Failed to parse Scene: " << msg << ". " << filepath_ << '\n';
+}
+
+std::optional<mat4> SceneLoader::ParseTransform(const nlohmann::json& node) const {
+  if (node.contains("transform")) {
+    const auto& transform_json = node["transform"];
     if (transform_json.is_object()) {
       vec3 translation{0};
       if (transform_json.contains("translation")) {
-        has_transform = true;
         translation = ToVec3(transform_json.value("translation", std::array<real, 3>{0, 0, 0}));
       }
       quat rotation;
       if (transform_json.contains("rotation")) {
-        has_transform = true;
         vec4 angle_axis =
             ToVec4(transform_json.value("rotation", std::array<real, 4>({0, 0, 1, 0})));
         rotation = glm::angleAxis(glm::radians(angle_axis[0]),
                                   vec3{angle_axis[1], angle_axis[2], angle_axis[3]});
-        // auto rot = std::make_shared<cpu::RotateY>(obj, angle_axis[0]);
-        auto trans = std::make_shared<cpu::Translate>(obj, translation);
-        // auto trans = std::make_shared<cpu::Translate>(rot, translation);
-        // return trans;
-        // return std::make_shared<cpu::RotateY>(obj, angle_axis[0]);
       }
       vec3 scale{1};
       if (transform_json.contains("scale")) {
-        has_transform = true;
         scale = ToVec3(transform_json.value("scale", std::array<real, 3>({1, 1, 1})));
       }
-      if (has_transform) {
-        return std::make_shared<cpu::Transform>(obj, translation, rotation, scale);
-      }
-    } else {
-      // TODO: make accessible here for better usability
-      // print_scene_error("transform key must be an object");
+      return glm::translate(mat4(1), translation) * glm::toMat4(rotation) *
+             glm::scale(mat4(1), scale);
     }
+    // TODO: make accessible here for better usability
+    // print_scene_error("transform key must be an object");
   }
-  return obj;
+  return std::nullopt;
+}
+mat4 SceneLoader::AccumulateTransform(const mat4& transform, const nlohmann::json& node) const {
+  if (node.contains("transform")) {
+    const auto& transform_json = node["transform"];
+    if (transform_json.is_object()) {
+      vec3 translation{0};
+      if (transform_json.contains("translation")) {
+        translation = ToVec3(transform_json.value("translation", std::array<real, 3>{0, 0, 0}));
+      }
+      quat rotation;
+      if (transform_json.contains("rotation")) {
+        vec4 angle_axis =
+            ToVec4(transform_json.value("rotation", std::array<real, 4>({0, 0, 1, 0})));
+        rotation = glm::angleAxis(glm::radians(angle_axis[0]),
+                                  vec3{angle_axis[1], angle_axis[2], angle_axis[3]});
+      }
+      vec3 scale{1};
+      if (transform_json.contains("scale")) {
+        scale = ToVec3(transform_json.value("scale", std::array<real, 3>({1, 1, 1})));
+      }
+      return glm::translate(mat4(1), translation) * glm::toMat4(rotation) *
+             glm::scale(mat4(1), scale) * transform;
+    }
+    // TODO: make accessible here for better usability
+    // print_scene_error("transform key must be an object");
+  }
+  return transform;
 }
 
-std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
+std::shared_ptr<cpu::Hittable> SceneLoader::ParseNode(
+    std::vector<std::shared_ptr<cpu::Hittable>>& list, const nlohmann::json& node) const {
+  std::shared_ptr<cpu::Hittable> return_obj;
+  if (node.contains("primitive")) {
+    int primitive_idx = node.value("primitive", -1);
+    if (primitive_idx == -1) {
+      PrintSceneError("primitive must be a non-negative integer");
+    }
+    if (primitive_idx >= static_cast<int>(list.size())) {
+      PrintSceneError("primitive out of range of primitives");
+    }
+    return_obj = list[primitive_idx];
+  }
+
+  auto transform = ParseTransform(node);
+  if (node.contains("children")) {
+    const auto& children = node["children"];
+    if (!children.is_array()) {
+      PrintSceneError("children entry must be an array");
+    }
+
+    auto children_list = std::make_shared<cpu::HittableList>();
+    children_list->Add(return_obj);
+    for (const auto& child : children) {
+      children_list->Add(ParseNode(list, child));
+    }
+    return_obj = children_list;
+  }
+  if (transform.has_value()) {
+    // TODO: refactor parse transform
+    return std::make_shared<cpu::TransformedHittable>(return_obj, transform.value());
+  }
+  return return_obj;
+};
+
+std::optional<cpu::Scene> SceneLoader::LoadScene(const std::string& filepath) {
+  filepath_ = filepath;
   cpu::Scene scene;
   nlohmann::json obj = util::LoadJsonFile(filepath);
   auto cam_data = obj["camera"];
@@ -113,12 +203,6 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
     scene.cam = LoadCamera(GET_PATH("data/") + camera_filename);
     scene.cam_name = camera_filename;
   }
-  auto primitives = obj["primitives"];
-  auto json_spheres = primitives["spheres"];
-
-  auto print_scene_error = [&](const std::string& str) {
-    std::cerr << "Failed to parse Scene: " << str << ". " << filepath << '\n';
-  };
 
   nlohmann::json::array_t json_materials = obj["materials"];
   auto json_textures = obj["textures"];
@@ -146,27 +230,26 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
             .noise_type = static_cast<cpu::texture::NoiseType>(
                 json_mat.value("noise_type", static_cast<int>(cpu::texture::NoiseType::kMarble)))};
       } else {
-        print_scene_error("Invalid texture type: " + type);
+        PrintSceneError("Invalid texture type: " + type);
       }
       scene.textures.emplace_back(tex);
     }
   }
 
-  std::unordered_map<size_t, uint32_t> id_to_arr_idx;
   for (const nlohmann::json& json_mat : json_materials) {
     size_t id = json_mat.value("id", std::numeric_limits<size_t>::max());
     if (id == std::numeric_limits<size_t>::max()) {
-      print_scene_error("material id not found");
+      PrintSceneError("material id not found");
       return {};
     }
     if (id >= num_materials) {
-      print_scene_error("invalid material id, must be: 0 <= id < length of materials array");
+      PrintSceneError("invalid material id, must be: 0 <= id < length of materials array");
       return {};
     }
 
     std::string type = json_mat.value("type", "");
     if (type.empty()) {
-      print_scene_error("material type field empty");
+      PrintSceneError("material type field empty");
       return {};
     }
 
@@ -188,7 +271,7 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
         scene.textures.emplace_back(cpu::texture::SolidColor{
             .albedo = ToVec3(json_mat.value("albedo", std::array<real, 3>({1, 1, 1})))});
       } else {
-        print_scene_error("invalid texture, must contain tex_idx or albedo");
+        PrintSceneError("invalid texture, must contain tex_idx or albedo");
       }
     } else if (type == "diffuse_light") {
       if (json_mat.contains("tex_idx")) {
@@ -198,53 +281,58 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
         scene.textures.emplace_back(cpu::texture::SolidColor{
             .albedo = ToVec3(json_mat.value("albedo", std::array<real, 3>({1, 1, 1})))});
       } else {
-        print_scene_error("invalid diffuse light, must contain tex_idx or albedo");
+        PrintSceneError("invalid diffuse light, must contain tex_idx or albedo");
       }
     } else {
-      print_scene_error("Invalid material type");
+      PrintSceneError("Invalid material type");
     }
-    id_to_arr_idx[id] = scene.materials.size();
     scene.materials.emplace_back(mat);
   }
 
-  for (const nlohmann::json& json_sphere : json_spheres) {
-    std::array<real, 3> center = json_sphere.value("center", std::array<real, 3>{0, 0, 0});
-    std::array<real, 3> displacement =
-        json_sphere.value("displacement", std::array<real, 3>{0, 0, 0});
-    real radius = json_sphere.value("radius", 0.5);
-    auto sphere =
-        std::make_shared<cpu::Sphere>(vec3{center[0], center[1], center[2]},
-                                      vec3{displacement[0], displacement[1], displacement[2]},
-                                      radius, id_to_arr_idx[json_sphere.value("material_id", 0)]);
-    scene.hittable_list.Add(ParseTransform(sphere, json_sphere));
+  std::vector<std::shared_ptr<cpu::Hittable>> list;
+  auto primitives_json = obj["primitives"];
+  std::cout << "Parsing primitives\n";
+  for (const auto& primitive : primitives_json) {
+    std::string type = primitive.value("type", "");
+    if (type.empty()) {
+      PrintSceneError("Primitive needs type entry");
+    }
+    if (type == "quad") {
+      auto q = ToVec3(primitive.value("q", std::array<real, 3>{0, 0, 0}));
+      auto u = ToVec3(primitive.value("u", std::array<real, 3>{1, 0, 0}));
+      auto v = ToVec3(primitive.value("v", std::array<real, 3>{0, 0, 1}));
+      auto quad = std::make_shared<cpu::Quad>(q, u, v, primitive.value("material", 0));
+      list.emplace_back(quad);
+    } else if (type == "box") {
+      auto a = ToVec3(primitive.value("a", std::array<real, 3>{0, 0, 0}));
+      auto b = ToVec3(primitive.value("b", std::array<real, 3>{1, 1, 1}));
+      auto box =
+          std::make_shared<cpu::HittableList>(cpu::MakeBox(a, b, primitive.value("material", 0)));
+      list.emplace_back(box);
+    } else if (type == "sphere") {
+      std::array<real, 3> center = primitive.value("center", std::array<real, 3>{0, 0, 0});
+      std::array<real, 3> displacement =
+          primitive.value("displacement", std::array<real, 3>{0, 0, 0});
+      real radius = primitive.value("radius", 0.5);
+      auto sphere =
+          std::make_shared<cpu::Sphere>(vec3{center[0], center[1], center[2]},
+                                        vec3{displacement[0], displacement[1], displacement[2]},
+                                        radius, primitive.value("material", 0));
+      list.emplace_back(sphere);
+    }
   }
 
-  auto json_quads = primitives["quads"];
-  for (const nlohmann::json& json_quad : json_quads) {
-    auto q = ToVec3(json_quad.value("q", std::array<real, 3>{0, 0, 0}));
-    auto u = ToVec3(json_quad.value("u", std::array<real, 3>{1, 0, 0}));
-    auto v = ToVec3(json_quad.value("v", std::array<real, 3>{0, 0, 1}));
-
-    auto quad =
-        std::make_shared<cpu::Quad>(q, u, v, id_to_arr_idx[json_quad.value("material_id", 0)]);
-    scene.hittable_list.Add(ParseTransform(quad, json_quad));
-  }
-  auto json_boxes = primitives["boxes"];
-  for (const nlohmann::json& json_box : json_boxes) {
-    auto a = ToVec3(json_box.value("a", std::array<real, 3>{0, 0, 0}));
-    auto b = ToVec3(json_box.value("b", std::array<real, 3>{1, 1, 1}));
-    auto box =
-        std::make_shared<cpu::HittableList>(cpu::MakeBox(a, b, json_box.value("material_id", 0)));
-    scene.hittable_list.Add(ParseTransform(box, json_box));
+  for (const auto& node_json : obj["scene"]) {
+    scene.hittable_list.Add(ParseNode(list, node_json));
   }
 
+  // TODO: move to camera?
   if (obj["camera"].is_object()) {
     auto cam = obj["camera"];
     int width = cam.value("width", 0);
     real aspect_ratio = cam.value("aspect_ratio", 0.0f);
     if (width != 0 && aspect_ratio != 0.0f) {
       real height = width / aspect_ratio;
-      std::cout << width << ' ' << height << "hello\n";
       scene.dims = {width, height};
     }
   }
@@ -253,7 +341,6 @@ std::optional<cpu::Scene> LoadScene(const std::string& filepath) {
 }
 
 namespace {
-
 nlohmann::json::object_t Serialize(const cpu::MaterialDielectric& mat) {
   return {{"refraction_index", mat.refraction_index}, {"type", "dielectric"}};
 }
@@ -286,43 +373,5 @@ nlohmann::json::object_t Serialize(const cpu::MaterialMetal& mat) {
 }
 
 }  // namespace
-
-void WriteScene(const cpu::Scene& scene, const std::string& filepath) {
-  nlohmann::json obj = nlohmann::json::object();
-  nlohmann::json spheres = nlohmann::json::array();
-  nlohmann::json materials = nlohmann::json::array();
-  if (!scene.cam_name.empty()) {
-    WriteCamera(scene.cam, GET_PATH("data/") + scene.cam_name + ".json");
-  }
-
-  size_t i = 0;
-  for (const auto& mat : scene.materials) {
-    materials.push_back(std::visit(
-        [&](const auto& material) {
-          nlohmann::json::object_t obj = Serialize(material);
-          obj["id"] = i;
-          return obj;
-        },
-        mat));
-    i++;
-  }
-
-  for (const auto& sphere : scene.hittable_list.objects) {
-    std::shared_ptr<cpu::Sphere> sphere_ptr = std::dynamic_pointer_cast<cpu::Sphere>(sphere);
-    if (sphere_ptr) {
-      nlohmann::json json_sphere = {
-          {"center", ToVec3Arr(sphere_ptr->center_displacement.origin)},
-          {"displacement", ToVec3Arr(sphere_ptr->center_displacement.direction)},
-          {"radius", sphere_ptr->radius},
-          {"material_id", sphere_ptr->material_handle}};
-      spheres.push_back(json_sphere);
-    }
-  }
-  obj["camera"] = scene.cam_name;
-  obj["primitives"] = {{"spheres", spheres}};
-  obj["materials"] = materials;
-
-  util::WriteJson(obj, filepath);
-}
 
 }  // namespace raytrace2::serialize

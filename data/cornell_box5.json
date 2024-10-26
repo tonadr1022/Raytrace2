@@ -1,0 +1,100 @@
+{
+  "camera": {
+    "fov": 40,
+    "center": [278, 278, -800],
+    "look_at": [278, 278, 0],
+    "width": 600,
+    "aspect_ratio": 1.0
+  },
+  "background_color": [0, 0, 0],
+  "materials": [
+    {
+      "id": 0,
+      "type": "lambertian",
+      "albedo": [0.65, 0.05, 0.05]
+    },
+    {
+      "id": 1,
+      "type": "lambertian",
+      "albedo": [0.73, 0.73, 0.73]
+    },
+    {
+      "id": 2,
+      "type": "lambertian",
+      "albedo": [0.12, 0.45, 0.15]
+    },
+    {
+      "id": 3,
+      "type": "diffuse_light",
+      "albedo": [15, 15, 15]
+    }
+  ],
+  "primitives": [
+    {
+      "type": "quad",
+      "q": [555, 0, 0],
+      "u": [0, 555, 0],
+      "v": [0, 0, 555],
+      "material": 2
+    },
+    {
+      "type": "quad",
+      "q": [0, 0, 0],
+      "u": [0, 555, 0],
+      "v": [0, 0, 555],
+      "material": 0
+    },
+    {
+      "type": "quad",
+      "q": [343, 554, 332],
+      "u": [-130, 0, 0],
+      "v": [0, 0, -105],
+      "material": 3
+    },
+    {
+      "type": "quad",
+      "q": [0, 0, 0],
+      "u": [555, 0, 0],
+      "v": [0, 0, 555],
+      "material": 1
+    },
+    {
+      "type": "quad",
+      "q": [0, 555, 0],
+      "u": [555, 0, 0],
+      "v": [0, 0, 555],
+      "material": 1
+    },
+    {
+      "type": "quad",
+      "q": [0, 0, 555],
+      "u": [555, 0, 0],
+      "v": [0, 555, 0],
+      "material": 1
+    },
+    { "type": "box", "a": [0, 0, 0], "b": [100, 100, 100], "material": 1 }
+  ],
+  "scene": [
+    {
+      "primitive": 6,
+      "transform": {
+        "translation": [230, 0, 265],
+        "rotation": [-18, 0, 1, 0]
+      },
+      "children": [
+        {
+          "transform": {
+            "translation": [0, 200, 0]
+          },
+          "primitive": 6
+        }
+      ]
+    },
+    { "primitive": 0 },
+    { "primitive": 1 },
+    { "primitive": 2 },
+    { "primitive": 3 },
+    { "primitive": 4 },
+    { "primitive": 5 }
+  ]
+}
