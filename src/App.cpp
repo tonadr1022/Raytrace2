@@ -236,10 +236,11 @@ void App::Run(int argc, char* argv[]) {
       if (!std::filesystem::exists(GET_PATH("output/"))) {
         std::filesystem::create_directory(GET_PATH("output/"));
       }
-      std::string out_path =
-          GET_PATH("output/") + filename + "_" + util::CurrentDateTime() + ".png";
+      std::string out_path = GET_PATH("output/") + filename + "_" + util::CurrentDateTime();
       std::cout << "Writing image: " << out_path << '\n';
-      util::WriteImage(output_tex->Id(), 4, out_path);
+      // util::WriteImage(output_tex->Id(), 4, out_path + ".png");
+      util::WriteImage(cpu_tracer_.NonConvertexPixels(), cpu_tracer_.Dims().x, cpu_tracer_.Dims().y,
+                       out_path + ".png");
       saved = true;
     }
 

@@ -9,24 +9,20 @@
   "background_color": [0, 0, 0],
   "materials": [
     {
-      "id": 0,
       "type": "lambertian",
       "albedo": [0.65, 0.05, 0.05]
     },
     {
-      "id": 1,
       "type": "lambertian",
       "albedo": [0.73, 0.73, 0.73]
     },
     {
-      "id": 2,
       "type": "lambertian",
       "albedo": [0.12, 0.45, 0.15]
     },
     {
-      "id": 3,
       "type": "diffuse_light",
-      "albedo": [15, 15, 15]
+      "albedo": [7, 7, 7]
     }
   ],
   "primitives": [
@@ -46,9 +42,9 @@
     },
     {
       "type": "quad",
-      "q": [343, 554, 332],
-      "u": [-130, 0, 0],
-      "v": [0, 0, -105],
+      "q": [113, 554, 127],
+      "u": [330, 0, 0],
+      "v": [0, 0, 305],
       "material": 3
     },
     {
@@ -72,23 +68,41 @@
       "v": [0, 555, 0],
       "material": 1
     },
-    { "type": "box", "a": [0, 0, 0], "b": [100, 100, 100], "material": 1 }
+    {
+      "type": "box",
+      "a": [0, 0, 0],
+      "b": [165, 330, 165],
+      "material": 1,
+      "constant_medium": {
+        "density": 0.01,
+        "albedo": [0, 0, 0]
+      }
+    },
+    {
+      "type": "box",
+      "a": [0, 0, 0],
+      "b": [165, 165, 165],
+      "material": 1,
+      "constant_medium": {
+        "density": 0.01,
+        "albedo": [1, 1, 1]
+      }
+    }
   ],
   "scene": [
     {
-      "primitive": 6,
       "transform": {
-        "translation": [230, 0, 265],
-        "rotation": [-18, 0, 1, 0]
+        "translation": [265, 0, 295],
+        "rotation": [15, 0, 1, 0]
       },
-      "children": [
-        {
-          "transform": {
-            "translation": [0, 200, 0]
-          },
-          "primitive": 6
-        }
-      ]
+      "primitive": 6
+    },
+    {
+      "primitive": 7,
+      "transform": {
+        "translation": [130, 0, 65],
+        "rotation": [-18, 0, 1, 0]
+      }
     },
     { "primitive": 0 },
     { "primitive": 1 },

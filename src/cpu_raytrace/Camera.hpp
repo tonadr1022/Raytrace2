@@ -55,8 +55,9 @@ class Camera {
     vec3 center = (defocus_angle_ <= 0) ? center_ : DefocusDiskSample();
     // assuming time starts at 0 and ends at 1, randomly sample a time between
     real ray_time = math::RandReal();
-    return Ray{
-        .origin = center, .direction = glm::normalize(pixel_center - center), .time = ray_time};
+    // return Ray{
+    //     .origin = center, .direction = glm::normalize(pixel_center - center), .time = ray_time};
+    return Ray{.origin = center, .direction = pixel_center - center, .time = ray_time};
   }
 
   inline void SetCenter(const vec3& center) {

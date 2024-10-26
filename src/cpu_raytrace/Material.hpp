@@ -58,4 +58,10 @@ struct alignas(16) MaterialLambertian : public Material<MaterialLambertian> {
                vec3& attenuation, Ray& scattered) const;
 };
 
+struct MaterialIsotropic : public Material<MaterialIsotropic, MaterialType::kScattering> {
+  uint32_t tex_idx{};
+  bool Scatter(const texture::TexArray& tex_arr, const Ray& r_in, const HitRecord& rec,
+               vec3& attenuation, Ray& scattered) const;
+};
+
 }  // namespace raytrace2::cpu

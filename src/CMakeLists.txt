@@ -22,6 +22,8 @@ set(SOURCES
     cpu_raytrace/BVH.cpp
     cpu_raytrace/HittableList.cpp
     cpu_raytrace/Transform.cpp
+    cpu_raytrace/ConstantMedium.cpp
+
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

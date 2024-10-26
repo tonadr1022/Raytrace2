@@ -73,4 +73,13 @@ vec3 DiffuseLight::Emit(const texture::TexArray& tex_arr, const vec2& uv, const 
                     tex_arr[tex_idx]);
 }
 
+bool MaterialIsotropic::Scatter(const texture::TexArray& tex_arr, const Ray& r_in,
+                                const HitRecord& rec, vec3& attenuation, Ray& scattered) const {
+  scattered = Ray(rec.point, math::RandUnitVec3(), r_in.time);
+  attenuation = std::visit(
+      [&rec, &tex_arr](auto&& tex) -> vec3 { return tex.Value(tex_arr, rec.uv, rec.point); },
+      tex_arr[tex_idx]);
+  return true;
+}
+
 }  // namespace raytrace2::cpu

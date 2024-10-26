@@ -17,6 +17,12 @@ color ToColor(const vec3& col) {
   return color{floor(col.x * 255.999), floor(col.y * 255.999), floor(col.z * 255.999), 255};
 }
 
+// color ToColor(const vec3& col) {
+//   vec3 v{col.x, col.y, col.z};
+//   v = vec3{std::pow(v.x, 1.0 / 2.0), std::pow(v.y, 1.0 / 2.0), std::pow(v.z, 1.0 / 2.0)};
+//   return color{floor(v.x * 255.999), floor(v.y * 255.999), floor(v.z * 255.999), 255};
+// }
+
 vec3 RayColor(const cpu::Ray& r, int depth, const Scene& scene) {
   if (depth <= 0) return {0, 0, 0};
 
@@ -78,5 +84,31 @@ void RayTracer::OnImGui() {
     Reset();
   }
   ImGui::End();
+}
+void RayTracer::OnResize(glm::ivec2 dims) {
+  dims_ = dims;
+  camera->SetDims(dims);
+  frame_idx_ = 0;
+
+  size_t new_size = static_cast<size_t>(dims.x) * dims.y;
+  pixels_.resize(new_size);
+  iter_.resize(new_size);
+  accumulation_data_.resize(new_size);
+
+  int i = 0;
+  for (int y = 0; y < dims.y; y++) {
+    for (int x = 0; x < dims.x; x++, i++) {
+      iter_[i] = {x, y, i};
+    }
+  }
+  Reset();
+}
+std::vector<vec3> RayTracer::NonConvertexPixels() const {
+  std::vector<vec3> ret(accumulation_data_.size());
+  for (int i = 0; i < ret.size(); i++) {
+    ret[i] = vec3{accumulation_data_[i].x / frame_idx_, accumulation_data_[i].y / frame_idx_,
+                  accumulation_data_[i].z / frame_idx_};
+  }
+  return ret;
 }
 }  // namespace raytrace2::cpu

@@ -12,37 +12,20 @@ namespace raytrace2::cpu {
 struct Scene;
 class Camera;
 
-using PixelArray = std::vector<color>;
-
 struct RayTracer {
   void Update(const Scene& scene);
-
-  void OnResize(glm::ivec2 dims) {
-    dims_ = dims;
-    camera->SetDims(dims);
-    frame_idx_ = 0;
-
-    size_t new_size = static_cast<size_t>(dims.x) * dims.y;
-    pixels_.resize(new_size);
-    iter_.resize(new_size);
-    accumulation_data_.resize(new_size);
-
-    int i = 0;
-    for (int y = 0; y < dims.y; y++) {
-      for (int x = 0; x < dims.x; x++, i++) {
-        iter_[i] = {x, y, i};
-      }
-    }
-    Reset();
-  }
+  void OnResize(glm::ivec2 dims);
 
   [[nodiscard]] inline const gl::Texture& GetTex() const { return output_tex_; }
 
+  [[nodiscard]] std::vector<vec3> NonConvertexPixels() const;
   [[nodiscard]] inline const PixelArray& Pixels() const { return pixels_; }
 
   bool OnEvent(const SDL_Event& event);
   void OnImGui();
   void Reset();
+
+  [[nodiscard]] glm::ivec2 Dims() const { return dims_; }
 
   Camera* camera{nullptr};
   size_t max_depth{50};

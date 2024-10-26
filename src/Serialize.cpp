@@ -10,6 +10,7 @@
 #include "Util.hpp"
 #include "cpu_raytrace/BVH.hpp"
 #include "cpu_raytrace/Camera.hpp"
+#include "cpu_raytrace/ConstantMedium.hpp"
 #include "cpu_raytrace/Fwd.hpp"
 #include "cpu_raytrace/Hittable.hpp"
 #include "cpu_raytrace/HittableList.hpp"
@@ -237,16 +238,6 @@ std::optional<cpu::Scene> SceneLoader::LoadScene(const std::string& filepath) {
   }
 
   for (const nlohmann::json& json_mat : json_materials) {
-    size_t id = json_mat.value("id", std::numeric_limits<size_t>::max());
-    if (id == std::numeric_limits<size_t>::max()) {
-      PrintSceneError("material id not found");
-      return {};
-    }
-    if (id >= num_materials) {
-      PrintSceneError("invalid material id, must be: 0 <= id < length of materials array");
-      return {};
-    }
-
     std::string type = json_mat.value("type", "");
     if (type.empty()) {
       PrintSceneError("material type field empty");
@@ -291,35 +282,59 @@ std::optional<cpu::Scene> SceneLoader::LoadScene(const std::string& filepath) {
 
   std::vector<std::shared_ptr<cpu::Hittable>> list;
   auto primitives_json = obj["primitives"];
-  std::cout << "Parsing primitives\n";
   for (const auto& primitive : primitives_json) {
     std::string type = primitive.value("type", "");
     if (type.empty()) {
       PrintSceneError("Primitive needs type entry");
     }
+    std::shared_ptr<cpu::Hittable> hittable{nullptr};
     if (type == "quad") {
       auto q = ToVec3(primitive.value("q", std::array<real, 3>{0, 0, 0}));
       auto u = ToVec3(primitive.value("u", std::array<real, 3>{1, 0, 0}));
       auto v = ToVec3(primitive.value("v", std::array<real, 3>{0, 0, 1}));
-      auto quad = std::make_shared<cpu::Quad>(q, u, v, primitive.value("material", 0));
-      list.emplace_back(quad);
+      hittable = std::make_shared<cpu::Quad>(q, u, v, primitive.value("material", 0));
     } else if (type == "box") {
       auto a = ToVec3(primitive.value("a", std::array<real, 3>{0, 0, 0}));
       auto b = ToVec3(primitive.value("b", std::array<real, 3>{1, 1, 1}));
-      auto box =
+      hittable =
           std::make_shared<cpu::HittableList>(cpu::MakeBox(a, b, primitive.value("material", 0)));
-      list.emplace_back(box);
+
     } else if (type == "sphere") {
       std::array<real, 3> center = primitive.value("center", std::array<real, 3>{0, 0, 0});
       std::array<real, 3> displacement =
           primitive.value("displacement", std::array<real, 3>{0, 0, 0});
       real radius = primitive.value("radius", 0.5);
-      auto sphere =
+      hittable =
           std::make_shared<cpu::Sphere>(vec3{center[0], center[1], center[2]},
                                         vec3{displacement[0], displacement[1], displacement[2]},
                                         radius, primitive.value("material", 0));
-      list.emplace_back(sphere);
+    } else {
+      PrintSceneError("invalid primitive type");
+      continue;
     }
+
+    // parse constant medium
+    if (primitive.contains("constant_medium")) {
+      const auto& const_med_json = primitive["constant_medium"];
+      uint32_t material_idx;
+      if (const_med_json.contains("albedo")) {
+        // make texture material
+        auto mat = cpu::MaterialIsotropic{.tex_idx = static_cast<uint32_t>(scene.textures.size())};
+        // make color texture at the tex idx
+        scene.textures.emplace_back(cpu::texture::SolidColor{
+            .albedo = ToVec3(const_med_json.value("albedo", std::array<real, 3>({0, 0, 0})))});
+        material_idx = scene.materials.size();
+        scene.materials.emplace_back(mat);
+      } else if (const_med_json.contains("material")) {
+        material_idx = const_med_json.value("material", 0);
+      } else {
+        PrintSceneError("constant_medium must contain 'albedo' or 'material'");
+        continue;
+      }
+      real density = const_med_json.value("density", 0.01);
+      hittable = std::make_shared<cpu::ConstantMedium>(hittable, density, material_idx);
+    }
+    list.emplace_back(hittable);
   }
 
   for (const auto& node_json : obj["scene"]) {
