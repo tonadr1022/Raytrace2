@@ -18,8 +18,9 @@ struct RayTracer {
 
   [[nodiscard]] inline const gl::Texture& GetTex() const { return output_tex_; }
 
-  [[nodiscard]] std::vector<vec3> NonConvertexPixels() const;
+  [[nodiscard]] std::vector<vec3> NonConvertedPixels() const;
   [[nodiscard]] inline const PixelArray& Pixels() const { return pixels_; }
+  [[nodiscard]] inline size_t FrameIdx() const { return frame_idx_; }
 
   bool OnEvent(const SDL_Event& event);
   void OnImGui();

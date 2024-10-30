@@ -1,9 +1,27 @@
 import random
 import json
+import subprocess
+
+EXECUTABLE_PATH = "build/Release/src/raytrace_2"
 
 
-def write_json():
-    pass
+def run(name: str):
+    print("running")
+    subprocess.run([EXECUTABLE_PATH, name])
+    print("done")
+    # process = subprocess.Popen(
+    #     [EXECUTABLE_PATH, name], stdout=subprocess.PIPE, text=True
+    # )
+    # process.communicate()  # Waits for the process to complete
+    #
+    # if process.returncode != 0:
+    #     print(f"Process failed with return code {process.returncode}")
+    # else:
+    #     print("Process completed successfully")
+
+
+def get_scene_json_path_str(name: str):
+    return f"data/{name}.json"
 
 
 class Scene:
@@ -28,7 +46,7 @@ class Scene:
         return self._add_mat("metal", {"albedo": albedo, "fuzz": fuzz})
 
     def add_dielectric(self, refraction_idx: float):
-        return self._add_mat("dielectric", {"refraction_idx": refraction_idx})
+        return self._add_mat("dielectric", {"refraction_index": refraction_idx})
 
     def add_diffuse_light(self, albedo: list[float]):
         return self._add_mat("diffuse_light", {"albedo": albedo})
@@ -49,11 +67,10 @@ class Scene:
         return idx
 
     def add_node(self, args: dict | None = None, primitive_idx=-1):
-        if primitive_idx == -1:
-            return
         if args is None:
             args = {}
-        args["primitive_idx"] = primitive_idx
+        if primitive_idx != -1:
+            args["primitive"] = primitive_idx
         self.nodes.append(args)
 
     def _add_mat(self, mat_type: str, data: dict):
@@ -156,11 +173,9 @@ def rand_vec3(min, max):
     ]
 
 
-def make_book2_final_scene():
-    boxes_per_side = 2
-    scene = Scene()
+def add_floor(scene: Scene):
+    boxes_per_side = 20
     ground_mat = scene.add_lambertian([0.48, 0.83, 0.53])
-
     for i in range(boxes_per_side):
         for j in range(boxes_per_side):
             w = 100.0
@@ -172,13 +187,19 @@ def make_book2_final_scene():
             z1 = z0 + w
             scene.add_box([x0, y0, z0], [x1, y1, z1], ground_mat)
 
+
+def make_book2_final_scene():
+    scene = Scene()
+
+    add_floor(scene)
+
     scene.add_quad(
         [123, 554, 147], [300, 0, 0], [0, 0, 265], scene.add_diffuse_light([7, 7, 7])
     )
 
-    center1 = [400, 400, 200]
-    center2 = [center1[0] + 30, center1[1], center1[2]]
-    scene.add_sphere_moving(center1, center2, 50, scene.add_lambertian([0.7, 0.3, 0.1]))
+    scene.add_sphere_moving(
+        [400, 400, 200], [30, 0, 0], 50, scene.add_lambertian([0.7, 0.3, 0.1])
+    )
     dielectric_15 = scene.add_dielectric(1.5)
     scene.add_sphere([260, 150, 45], 50, dielectric_15)
     scene.add_sphere([0, 150, 145], 50, scene.add_metal([0.8, 0.8, 0.9], 1.0))
@@ -203,7 +224,7 @@ def make_book2_final_scene():
 
     sphere_primitives = []
     white_mat = scene.add_lambertian([0.73, 0.73, 0.73])
-    for i in range(5):
+    for _ in range(1000):
         sphere_primitives.append(scene.add_sphere(rand_vec3(0, 165), 10, white_mat))
 
     scene.add_node(
@@ -212,14 +233,140 @@ def make_book2_final_scene():
             "children": [{"primitive": i} for i in sphere_primitives],
         }
     )
-    scene.camera["center"] = [478, 278, -600]
-    scene.camera["look_at"] = [278, 278, 0]
+
     return scene
 
 
-def main():
+def make_constant_medium(density, albedo: list):
+    return {"constant_medium": {"density": density, "albedo": albedo}}
+
+
+def make_transform(
+    translation: list | None = None,
+    rotation: list | None = None,
+    scale: list | None = None,
+):
+    ret = {}
+    if translation:
+        ret["translation"] = translation
+    if scale:
+        ret["scale"] = scale
+    if rotation:
+        ret["rotation"] = rotation
+    return ret
+
+
+def add_transform(
+    diction: dict,
+    translation: list | None = None,
+    rotation: list | None = None,
+    scale: list | None = None,
+):
+    diction["transform"] = make_transform(translation, rotation, scale)
+    return diction
+
+
+def add_cornell_box(scene: Scene):
+    red = scene.add_lambertian([0.65, 0.05, 0.05])
+    white = scene.add_lambertian([0.73, 0.73, 0.73])
+    green = scene.add_lambertian([0.12, 0.45, 0.15])
+    light = scene.add_diffuse_light([7, 7, 7])
+
+    scene.add_node(None, scene.add_quad([555, 0, 0], [0, 555, 0], [0, 0, 555], green))
+    scene.add_node(None, scene.add_quad([0, 0, 0], [0, 555, 0], [0, 0, 555], red))
+    scene.add_node(
+        None, scene.add_quad([113, 554, 127], [330, 0, 0], [0, 0, 305], light)
+    )
+    scene.add_node(None, scene.add_quad([0, 0, 0], [555, 0, 0], [0, 0, 555], white))
+    scene.add_node(None, scene.add_quad([0, 555, 0], [555, 0, 0], [0, 0, 555], white))
+    scene.add_node(None, scene.add_quad([0, 0, 555], [555, 0, 0], [0, 555, 0], white))
+
+
+def add_regular_cornell_boxes(scene: Scene):
+    white = scene.add_lambertian([0.73, 0.73, 0.73])
+    scene.add_node(
+        {
+            "transform": make_transform([130, 0, 65], [-18, 0, 1, 0]),
+            "primitive": scene.add_box([0, 0, 0], [165, 165, 165], white),
+        }
+    )
+    scene.add_node(
+        {
+            "transform": make_transform([265, 0, 295], [15, 0, 1, 0]),
+            "primitive": scene.add_box([0, 0, 0], [165, 330, 165], white),
+        }
+    )
+
+
+def add_volume_cornell_boxes(scene: Scene):
+    scene.add_node(
+        {
+            "transform": make_transform([130, 0, 65], [-18, 0, 1, 0]),
+            "primitive": scene.add_box(
+                [0, 0, 0], [165, 165, 165], 0, make_constant_medium(0.01, [1, 1, 1])
+            ),
+        }
+    )
+    scene.add_node(
+        {
+            "transform": make_transform([265, 0, 295], [15, 0, 1, 0]),
+            "primitive": scene.add_box(
+                [0, 0, 0], [165, 330, 165], 0, make_constant_medium(0.01, [0, 0, 0])
+            ),
+        }
+    )
+
+
+def write_json(path: str, data: dict):
+    with open(path, "w") as json_file:
+        json.dump(data, json_file, indent=2)
+
+
+def set_cornell_cam(scene: Scene):
+    scene.camera["center"] = [278, 278, -800]
+    scene.camera["look_at"] = [278, 278, 0]
+    scene.camera["fov"] = 40
+
+
+def run_cornell_box_original_scene(name: str):
+    scene = Scene()
+    add_cornell_box(scene)
+    add_regular_cornell_boxes(scene)
+    set_cornell_cam(scene)
+    scene.write_json(get_scene_json_path_str(name))
+    run(name)
+
+
+def run_cornell_box_volume_scene(name: str):
+    scene = Scene()
+    add_volume_cornell_boxes(scene)
+    add_cornell_box(scene)
+    set_cornell_cam(scene)
+    scene.write_json(get_scene_json_path_str(name))
+    run(name)
+
+
+def run_book2_final_scene(name: str):
     scene = make_book2_final_scene()
-    scene.write_json("data/test.json")
+    scene.camera["center"] = [478, 278, -600]
+    scene.camera["look_at"] = [278, 278, 0]
+    scene.write_json(get_scene_json_path_str(name))
+    run(name)
+
+
+def main():
+    # TODO: flags for whether to run the raytracer or not
+    settings = {
+        "render_once": True,
+        "save_after_render_once": True,
+        "num_samples": 10000,
+        "max_depth": 50,
+        "render_window": False,
+    }
+    write_json("data/settings.json", settings)
+    run_book2_final_scene("book2_final_scene_10000_samples")
+    # run_cornell_box_volume_scene("cornell_volume_10000_samples")
+    # run_cornell_box_original_scene("cornell_original_10000_samples")
 
 
 if __name__ == "__main__":

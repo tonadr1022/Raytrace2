@@ -13,11 +13,13 @@ class Camera {
   Camera(const glm::vec3& center, const glm::vec3& lookat, const glm::vec3& view_up)
       : center_(center), lookat_(lookat), view_up_(view_up) {}
 
-  void OnChange() {
+  void Update() {
+    if (!dirty_) return;
+    dirty_ = false;
     real theta = glm::radians(vfov_);
     real h = glm::tan(theta / 2);
     vec3 u, v, w;
-    // real focal_length = glm::length(center_ - lookat_);
+    // get orthonormal basis
     w = glm::normalize(center_ - lookat_);
     u = glm::normalize(glm::cross(view_up_, w));
     v = glm::cross(w, u);
@@ -40,63 +42,73 @@ class Camera {
     auto defocus_radius = focus_dist_ * glm::tan(glm::radians(defocus_angle_ / 2));
     defocus_disk_u_ = u * defocus_radius;
     defocus_disk_v_ = v * defocus_radius;
+    sqrt_samples_per_pix_ = static_cast<int>(std::sqrt(samples_per_pixel_));
+    pixel_samples_scale_ = 1.0 / (sqrt_samples_per_pix_ * sqrt_samples_per_pix_);
+    recip_sqrt_samples_per_pix_ = 1.0 / sqrt_samples_per_pix_;
   }
 
-  [[nodiscard]] inline Ray GetRay(int x, int y) const {
-    auto pixel_center = pixel00_loc_ + (static_cast<real>(x) * pixel_delta_u_) +
-                        (static_cast<real>(y) * pixel_delta_v_);
-    auto pixel_sample_square = [this]() -> vec3 {
-      real px = -0.5 + math::RandReal();
-      real py = -0.5 + math::RandReal();
-      return {px * pixel_delta_u_.x, py * pixel_delta_v_.y, 0.0};
+  [[nodiscard]] inline Ray GetRay(int x, int y, int s_i, int s_j) const {
+    assert(!dirty_ && "camera must be updated before getting ray");
+    auto sample_square_stratified = [this](int s_i, int s_j) -> vec2 {
+      auto px = (s_i + math::RandReal()) * recip_sqrt_samples_per_pix_ - 0.5;
+      auto py = (s_j + math::RandReal()) * recip_sqrt_samples_per_pix_ - 0.5;
+      return {px, py};
     };
 
-    pixel_center += pixel_sample_square();
+    auto offset = sample_square_stratified(s_i, s_j);
+    auto pixel_center = pixel00_loc_ + ((static_cast<real>(x) + offset.x) * pixel_delta_u_) +
+                        ((static_cast<real>(y) + offset.y) * pixel_delta_v_);
     vec3 center = (defocus_angle_ <= 0) ? center_ : DefocusDiskSample();
     // assuming time starts at 0 and ends at 1, randomly sample a time between
     real ray_time = math::RandReal();
-    // return Ray{
-    //     .origin = center, .direction = glm::normalize(pixel_center - center), .time = ray_time};
-    return Ray{.origin = center, .direction = pixel_center - center, .time = ray_time};
+    return Ray{
+        .origin = center, .direction = glm::normalize(pixel_center - center), .time = ray_time};
+    // return Ray{.origin = center, .direction = pixel_center - center, .time = ray_time};
   }
 
   inline void SetCenter(const vec3& center) {
     center_ = center;
-    OnChange();
+    dirty_ = true;
   }
 
   inline void SetViewUp(const vec3& view_up) {
     view_up_ = view_up;
-    OnChange();
+    dirty_ = true;
   }
 
   inline void SetLookAt(const vec3& lookat) {
     lookat_ = lookat;
-    OnChange();
+    dirty_ = true;
   }
 
   inline void SetFOV(real fov) {
     vfov_ = fov;
-    OnChange();
+    dirty_ = true;
   }
 
   inline void SetDims(const glm::ivec2& dims) {
     dims_ = dims;
-    OnChange();
+    dirty_ = true;
   }
 
   inline void SetDefocusAngle(real angle) {
     defocus_angle_ = angle;
-    OnChange();
+    dirty_ = true;
   }
 
   inline void SetFocusDistance(real focus_distance) {
     focus_dist_ = focus_distance;
-    OnChange();
+    dirty_ = true;
+  }
+  inline void SetSamplesPerPixel(int samples_per_pixel) {
+    samples_per_pixel_ = samples_per_pixel;
+    dirty_ = true;
   }
 
   [[nodiscard]] inline real GetFOV() const { return vfov_; }
   [[nodiscard]] inline const glm::ivec2& GetDims() const { return dims_; }
+  [[nodiscard]] inline int SqrtSamplesPerPixel() const { return sqrt_samples_per_pix_; }
+  [[nodiscard]] inline int SamplesPerPixel() const { return samples_per_pixel_; }
 
   vec3 center_{0, 0, 0};
   vec3 lookat_{0, 0, -1};
@@ -112,6 +124,12 @@ class Camera {
   glm::ivec2 dims_;
 
  private:
+  bool dirty_{true};
+  int sqrt_samples_per_pix_;
+  real recip_sqrt_samples_per_pix_;
+  real pixel_samples_scale_;
+  int samples_per_pixel_{1};
+
   [[nodiscard]] vec3 DefocusDiskSample() const {
     auto p = math::RandInUnitDisk();
     return center_ + (p[0] * defocus_disk_u_) + (p[1] * defocus_disk_v_);

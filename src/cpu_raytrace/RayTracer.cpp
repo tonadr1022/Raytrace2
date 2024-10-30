@@ -17,12 +17,6 @@ color ToColor(const vec3& col) {
   return color{floor(col.x * 255.999), floor(col.y * 255.999), floor(col.z * 255.999), 255};
 }
 
-// color ToColor(const vec3& col) {
-//   vec3 v{col.x, col.y, col.z};
-//   v = vec3{std::pow(v.x, 1.0 / 2.0), std::pow(v.y, 1.0 / 2.0), std::pow(v.z, 1.0 / 2.0)};
-//   return color{floor(v.x * 255.999), floor(v.y * 255.999), floor(v.z * 255.999), 255};
-// }
-
 vec3 RayColor(const cpu::Ray& r, int depth, const Scene& scene) {
   if (depth <= 0) return {0, 0, 0};
 
@@ -59,9 +53,15 @@ void RayTracer::Reset() {
 }
 
 void RayTracer::Update(const Scene& scene) {
+  camera->Update();
+  int samples_per_pix = camera->SamplesPerPixel();
+  int sqrt_samples_per_pix = camera->SqrtSamplesPerPixel();
+  // get s_j and s_i for this frame
+  int s_i = frame_idx_ % sqrt_samples_per_pix;
+  int s_j = frame_idx_ / sqrt_samples_per_pix % sqrt_samples_per_pix;
   frame_idx_++;
-  auto per_pixel = [this, &scene](const glm::ivec3& idx) {
-    vec3 ray_color = math::LinearToGamma(RayColor(camera->GetRay(idx.x, idx.y), max_depth, scene));
+  auto per_pixel = [this, &scene, s_j, s_i](const glm::ivec3& idx) {
+    vec3 ray_color = RayColor(camera->GetRay(idx.x, idx.y, s_i, s_j), max_depth, scene);
     accumulation_data_[idx.z] += ray_color;
     pixels_[idx.z] = ToColor(glm::clamp(accumulation_data_[idx.z] / static_cast<real>(frame_idx_),
                                         static_cast<real>(0.0), static_cast<real>(1.0)));
@@ -103,9 +103,9 @@ void RayTracer::OnResize(glm::ivec2 dims) {
   }
   Reset();
 }
-std::vector<vec3> RayTracer::NonConvertexPixels() const {
+std::vector<vec3> RayTracer::NonConvertedPixels() const {
   std::vector<vec3> ret(accumulation_data_.size());
-  for (int i = 0; i < ret.size(); i++) {
+  for (size_t i = 0; i < ret.size(); i++) {
     ret[i] = vec3{accumulation_data_[i].x / frame_idx_, accumulation_data_[i].y / frame_idx_,
                   accumulation_data_[i].z / frame_idx_};
   }

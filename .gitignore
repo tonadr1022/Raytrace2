@@ -10,6 +10,7 @@ vcpkg
 resources/icons
 resources/worlds/**
 output
+.DS_Store
 
 imgui.ini
 

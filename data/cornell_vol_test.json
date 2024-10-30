@@ -1,0 +1,269 @@
+{
+  "textures": [],
+  "materials": [
+    {
+      "albedo": [
+        0.65,
+        0.05,
+        0.05
+      ],
+      "type": "lambertian"
+    },
+    {
+      "albedo": [
+        0.73,
+        0.73,
+        0.73
+      ],
+      "type": "lambertian"
+    },
+    {
+      "albedo": [
+        0.12,
+        0.45,
+        0.15
+      ],
+      "type": "lambertian"
+    },
+    {
+      "albedo": [
+        7,
+        7,
+        7
+      ],
+      "type": "diffuse_light"
+    }
+  ],
+  "primitives": [
+    {
+      "type": "box",
+      "a": [
+        0,
+        0,
+        0
+      ],
+      "b": [
+        165,
+        165,
+        165
+      ],
+      "material": 0,
+      "constant_medium": {
+        "density": 0.01,
+        "albedo": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "type": "box",
+      "a": [
+        0,
+        0,
+        0
+      ],
+      "b": [
+        165,
+        330,
+        165
+      ],
+      "material": 0,
+      "constant_medium": {
+        "density": 0.01,
+        "albedo": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "type": "quad",
+      "q": [
+        555,
+        0,
+        0
+      ],
+      "u": [
+        0,
+        555,
+        0
+      ],
+      "v": [
+        0,
+        0,
+        555
+      ],
+      "material": 2
+    },
+    {
+      "type": "quad",
+      "q": [
+        0,
+        0,
+        0
+      ],
+      "u": [
+        0,
+        555,
+        0
+      ],
+      "v": [
+        0,
+        0,
+        555
+      ],
+      "material": 0
+    },
+    {
+      "type": "quad",
+      "q": [
+        113,
+        554,
+        127
+      ],
+      "u": [
+        330,
+        0,
+        0
+      ],
+      "v": [
+        0,
+        0,
+        305
+      ],
+      "material": 3
+    },
+    {
+      "type": "quad",
+      "q": [
+        0,
+        0,
+        0
+      ],
+      "u": [
+        555,
+        0,
+        0
+      ],
+      "v": [
+        0,
+        0,
+        555
+      ],
+      "material": 1
+    },
+    {
+      "type": "quad",
+      "q": [
+        0,
+        555,
+        0
+      ],
+      "u": [
+        555,
+        0,
+        0
+      ],
+      "v": [
+        0,
+        0,
+        555
+      ],
+      "material": 1
+    },
+    {
+      "type": "quad",
+      "q": [
+        0,
+        0,
+        555
+      ],
+      "u": [
+        555,
+        0,
+        0
+      ],
+      "v": [
+        0,
+        555,
+        0
+      ],
+      "material": 1
+    }
+  ],
+  "scene": [
+    {
+      "transform": {
+        "translation": [
+          130,
+          0,
+          65
+        ],
+        "rotation": [
+          18,
+          0,
+          1,
+          0
+        ]
+      },
+      "primitive": 0
+    },
+    {
+      "transform": {
+        "translation": [
+          265,
+          0,
+          295
+        ],
+        "rotation": [
+          15,
+          0,
+          1,
+          0
+        ]
+      },
+      "primitive": 1
+    },
+    {
+      "primitive": 2
+    },
+    {
+      "primitive": 3
+    },
+    {
+      "primitive": 4
+    },
+    {
+      "primitive": 5
+    },
+    {
+      "primitive": 6
+    },
+    {
+      "primitive": 7
+    }
+  ],
+  "camera": {
+    "fov": 40,
+    "center": [
+      278,
+      278,
+      -800
+    ],
+    "look_at": [
+      278,
+      278,
+      0
+    ],
+    "width": 600,
+    "aspect_ratio": 1.0
+  },
+  "background_color": [
+    0,
+    0,
+    0
+  ]
+}

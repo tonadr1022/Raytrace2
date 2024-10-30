@@ -59,6 +59,8 @@ AppSettings LoadAppSettings(const std::string& filepath) {
   settings.num_samples = obj.value("num_samples", 1);
   settings.render_once = obj.value("render_once", false);
   settings.save_after_render_once = obj.value("save_after_render_once", false);
+  settings.max_depth = obj.value("max_depth", 50);
+  settings.render_window = obj.value("render_window", true);
   return settings;
 }
 
@@ -158,7 +160,7 @@ mat4 SceneLoader::AccumulateTransform(const mat4& transform, const nlohmann::jso
 
 std::shared_ptr<cpu::Hittable> SceneLoader::ParseNode(
     std::vector<std::shared_ptr<cpu::Hittable>>& list, const nlohmann::json& node) const {
-  std::shared_ptr<cpu::Hittable> return_obj;
+  std::shared_ptr<cpu::Hittable> return_obj{nullptr};
   if (node.contains("primitive")) {
     int primitive_idx = node.value("primitive", -1);
     if (primitive_idx == -1) {
@@ -175,14 +177,17 @@ std::shared_ptr<cpu::Hittable> SceneLoader::ParseNode(
     const auto& children = node["children"];
     if (!children.is_array()) {
       PrintSceneError("children entry must be an array");
+    } else {
+      auto children_list = std::make_shared<cpu::HittableList>();
+      if (return_obj) children_list->Add(return_obj);
+      for (const auto& child : children) {
+        children_list->Add(ParseNode(list, child));
+      }
+      return_obj = children_list;
     }
-
-    auto children_list = std::make_shared<cpu::HittableList>();
-    children_list->Add(return_obj);
-    for (const auto& child : children) {
-      children_list->Add(ParseNode(list, child));
-    }
-    return_obj = children_list;
+  }
+  if (return_obj == nullptr) {
+    PrintSceneError("error parsing node");
   }
   if (transform.has_value()) {
     // TODO: refactor parse transform
@@ -207,7 +212,6 @@ std::optional<cpu::Scene> SceneLoader::LoadScene(const std::string& filepath) {
 
   nlohmann::json::array_t json_materials = obj["materials"];
   auto json_textures = obj["textures"];
-  size_t num_materials = json_materials.size();
 
   if (json_textures.is_array()) {
     for (const nlohmann::json& json_mat : json_textures) {
@@ -354,39 +358,5 @@ std::optional<cpu::Scene> SceneLoader::LoadScene(const std::string& filepath) {
 
   return scene;
 }
-
-namespace {
-nlohmann::json::object_t Serialize(const cpu::MaterialDielectric& mat) {
-  return {{"refraction_index", mat.refraction_index}, {"type", "dielectric"}};
-}
-
-nlohmann::json::object_t Serialize(const cpu::MaterialLambertian& mat) {
-  return {{"albedo", ToVec3Arr(mat.albedo)}, {"type", "lambertian"}};
-}
-
-// TODO: rest of serialization write
-// nlohmann::json::object_t Serialize(const cpu::texture::Checker& mat) {
-//   return {{"even_tex_idx", mat.even_tex_idx},
-//           {"odd_tex_idx", mat.odd_tex_idx},
-//           {"scale", 1.f / mat.inv_scale}};
-// }
-//
-// nlohmann::json::object_t Serialize(const cpu::texture::SolidColor& mat) {
-//   return {{"albedo", ToVec3Arr(mat.albedo)}};
-// }
-
-nlohmann::json::object_t Serialize(const cpu::MaterialTexture& mat) {
-  return {{"tex_idx", mat.tex_idx}};
-}
-
-nlohmann::json::object_t Serialize(const cpu::DiffuseLight& mat) {
-  return {{"tex_idx", mat.tex_idx}};
-}
-
-nlohmann::json::object_t Serialize(const cpu::MaterialMetal& mat) {
-  return {{"albedo", ToVec3Arr(mat.albedo)}, {"fuzz", mat.fuzz}, {"type", "metal"}};
-}
-
-}  // namespace
 
 }  // namespace raytrace2::serialize
