@@ -166,7 +166,7 @@ void App::Run(int argc, char* argv[]) {
       std::filesystem::create_directory(GET_PATH("output/"));
     }
     if (!user_defined_output_path) {
-      image_output_path = GET_PATH("output/") + filename + "_" + util::CurrentDateTime() + ".png";
+      image_output_path = GET_PATH("output/") + filename + "_" + util::CurrentDateTime();
     }
     std::cout << "Writing image: " << image_output_path << '\n';
     util::WriteImage(cpu_tracer_.NonConvertedPixels(), cpu_tracer_.Dims().x, cpu_tracer_.Dims().y,

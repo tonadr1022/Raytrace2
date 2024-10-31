@@ -82,4 +82,13 @@ bool MaterialIsotropic::Scatter(const texture::TexArray& tex_arr, const Ray& r_i
   return true;
 }
 
+real MaterialLambertian::ScatteringPDF([[maybe_unused]] const Ray& r_in, const HitRecord& rec,
+                                       const Ray& scattered) const {
+  real cos_theta = glm::dot(rec.normal, glm::normalize(scattered.direction));
+  if (cos_theta < 0) {
+    return 0;
+  }
+  return cos_theta / std::numbers::pi;
+}
+
 }  // namespace raytrace2::cpu

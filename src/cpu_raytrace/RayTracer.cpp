@@ -38,10 +38,15 @@ vec3 RayColor(const cpu::Ray& r, int depth, const Scene& scene) {
         return material.Scatter(scene.textures, r, rec, attenuation, scattered);
       },
       *rec.material);
-  if (is_scattered) {
-    return attenuation * RayColor(scattered, depth - 1, scene) + emission_color;
-  }
-  return emission_color;
+  if (!is_scattered) return emission_color;
+
+  real scattering_pdf = std::visit(
+      [&](auto&& material) { return material.ScatteringPDF(r, rec, scattered); }, *rec.material);
+
+  vec3 color_from_scatter =
+      (attenuation * scattering_pdf * RayColor(scattered, depth - 1, scene)) / scattering_pdf;
+
+  return color_from_scatter + emission_color;
 }
 
 }  // namespace
@@ -52,6 +57,8 @@ void RayTracer::Reset() {
   frame_idx_ = 0;
 }
 
+#define STRATIFY
+#ifdef STRATIFY
 void RayTracer::Update(const Scene& scene) {
   camera->Update();
   int samples_per_pix = camera->SamplesPerPixel();
@@ -69,6 +76,20 @@ void RayTracer::Update(const Scene& scene) {
 
   std::for_each(std::execution::par, iter_.begin(), iter_.end(), per_pixel);
 }
+#else
+void RayTracer::Update(const Scene& scene) {
+  camera->Update();
+  frame_idx_++;
+  auto per_pixel = [this, &scene](const glm::ivec3& idx) {
+    vec3 ray_color = RayColor(camera->GetRay(idx.x, idx.y), max_depth, scene);
+    accumulation_data_[idx.z] += ray_color;
+    pixels_[idx.z] = ToColor(glm::clamp(accumulation_data_[idx.z] / static_cast<real>(frame_idx_),
+                                        static_cast<real>(0.0), static_cast<real>(1.0)));
+  };
+
+  std::for_each(std::execution::par, iter_.begin(), iter_.end(), per_pixel);
+}
+#endif
 
 bool RayTracer::OnEvent(const SDL_Event& event) {
   if (event.window.event == SDL_WINDOWEVENT_RESIZED) {

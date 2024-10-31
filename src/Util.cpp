@@ -46,11 +46,6 @@ void WriteImage(const std::vector<vec3>& pixels, int width, int height, const st
     return glm::ivec3{static_cast<int>(std::clamp(col.x * 255.999, 0.0, 255.0)),
                       static_cast<int>(std::clamp(col.y * 255.999, 0.0, 255.0)),
                       static_cast<int>(std::clamp(col.z * 255.999, 0.0, 255.0))};
-    // col = vec3{std::pow(col.x, 1.0 / 2.2), std::pow(col.y, 1.0 / 2.2), std::pow(col.z, 1.0
-    // / 2.2)}; col = glm::clamp(col, 0.0, 1.0);
-    //
-    // return glm::ivec3{static_cast<int>(col.x * 255.999), static_cast<int>(col.y * 255.999),
-    //                   static_cast<int>(col.z * 255.999)};
   };
   if (png) {
     stbi_flip_vertically_on_write(true);
@@ -64,10 +59,10 @@ void WriteImage(const std::vector<vec3>& pixels, int width, int height, const st
         data[idx + 2] = static_cast<unsigned char>(col.z);
       }
     }
-    stbi_write_png(out_path.c_str(), width, height, 3, data.data(),
+    stbi_write_png((out_path + ".png").c_str(), width, height, 3, data.data(),
                    width * sizeof(unsigned char) * 3);
   } else {
-    std::ofstream f(out_path);
+    std::ofstream f(out_path + ".ppm");
     f << "P3\n" << width << ' ' << height << "\n255\n";
     for (int h = height - 1; h >= 0; h--) {
       for (int w = 0; w < width; w++) {
@@ -87,12 +82,6 @@ void WriteImage(uint32_t tex, uint32_t num_channels, const std::string& out_path
   std::vector<uint8_t> pixels(static_cast<size_t>(w) * h * num_channels);
   glGetTextureImage(tex, mip_level, num_channels == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE,
                     sizeof(uint8_t) * pixels.size(), pixels.data());
-  // Apply gamma correction (inverse of 2.2 gamma correction)
-  // for (unsigned char& pixel : pixels) {
-  //   float value = pixel / 255.0f;
-  //   value = pow(value, 1.0f / 2.2f);  // Convert sRGB to linear
-  //   pixel = static_cast<uint8_t>(value * 255.0f);
-  // }
   stbi_write_png(out_path.c_str(), w, h, num_channels, pixels.data(), w * num_channels);
 }
 

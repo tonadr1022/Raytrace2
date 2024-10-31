@@ -47,6 +47,21 @@ class Camera {
     recip_sqrt_samples_per_pix_ = 1.0 / sqrt_samples_per_pix_;
   }
 
+  [[nodiscard]] inline Ray GetRay(int x, int y) const {
+    auto pixel_center = pixel00_loc_ + (static_cast<float>(x) * pixel_delta_u_) +
+                        (static_cast<float>(y) * pixel_delta_v_);
+    auto pixel_sample_square = [this]() -> vec3 {
+      float px = -0.5 + math::RandReal();
+      float py = -0.5 + math::RandReal();
+      return {px * pixel_delta_u_.x, py * pixel_delta_v_.y, 0.0};
+    };
+
+    pixel_center += pixel_sample_square();
+
+    return {.origin = (defocus_angle_ <= 0) ? center_ : DefocusDiskSample(),
+            .direction = pixel_center - center_};
+  }
+
   [[nodiscard]] inline Ray GetRay(int x, int y, int s_i, int s_j) const {
     assert(!dirty_ && "camera must be updated before getting ray");
     auto sample_square_stratified = [this](int s_i, int s_j) -> vec2 {

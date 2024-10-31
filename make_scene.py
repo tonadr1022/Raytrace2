@@ -266,17 +266,20 @@ def add_transform(
     return diction
 
 
-def add_cornell_box(scene: Scene):
+def add_cornell_box(scene: Scene, big_light: bool = False):
     red = scene.add_lambertian([0.65, 0.05, 0.05])
     white = scene.add_lambertian([0.73, 0.73, 0.73])
     green = scene.add_lambertian([0.12, 0.45, 0.15])
-    light = scene.add_diffuse_light([7, 7, 7])
+    light = scene.add_diffuse_light([7, 7, 7] if big_light else [15, 15, 15])
 
     scene.add_node(None, scene.add_quad([555, 0, 0], [0, 555, 0], [0, 0, 555], green))
     scene.add_node(None, scene.add_quad([0, 0, 0], [0, 555, 0], [0, 0, 555], red))
-    scene.add_node(
-        None, scene.add_quad([113, 554, 127], [330, 0, 0], [0, 0, 305], light)
-    )
+    if big_light:
+        light_quad = scene.add_quad([113, 554, 127], [330, 0, 0], [0, 0, 305], light)
+    else:
+        light_quad = scene.add_quad([343, 554, 332], [-130, 0, 0], [0, 0, -105], light)
+
+    scene.add_node(None, light_quad)
     scene.add_node(None, scene.add_quad([0, 0, 0], [555, 0, 0], [0, 0, 555], white))
     scene.add_node(None, scene.add_quad([0, 555, 0], [555, 0, 0], [0, 0, 555], white))
     scene.add_node(None, scene.add_quad([0, 0, 555], [555, 0, 0], [0, 555, 0], white))
@@ -355,18 +358,18 @@ def run_book2_final_scene(name: str):
 
 
 def main():
-    # TODO: flags for whether to run the raytracer or not
+    # TODO: flags for settings
     settings = {
         "render_once": True,
         "save_after_render_once": True,
-        "num_samples": 10000,
+        "num_samples": 100,
         "max_depth": 50,
-        "render_window": False,
+        "render_window": True,
     }
     write_json("data/settings.json", settings)
-    run_book2_final_scene("book2_final_scene_10000_samples")
+    # run_book2_final_scene("book2_final_scene_10000_samples")
     # run_cornell_box_volume_scene("cornell_volume_10000_samples")
-    # run_cornell_box_original_scene("cornell_original_10000_samples")
+    run_cornell_box_original_scene("test_png_ppm")
 
 
 if __name__ == "__main__":
