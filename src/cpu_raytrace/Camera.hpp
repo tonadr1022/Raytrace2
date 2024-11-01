@@ -58,8 +58,7 @@ class Camera {
 
     pixel_center += pixel_sample_square();
 
-    return {.origin = (defocus_angle_ <= 0) ? center_ : DefocusDiskSample(),
-            .direction = pixel_center - center_};
+    return {(defocus_angle_ <= 0) ? center_ : DefocusDiskSample(), pixel_center - center_, 0};
   }
 
   [[nodiscard]] inline Ray GetRay(int x, int y, int s_i, int s_j) const {

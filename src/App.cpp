@@ -241,7 +241,7 @@ void App::Run(int argc, char* argv[]) {
       window_->EndRenderFrame(imgui_enabled_);
     }
   } else {
-    for (int i = 0; i < settings_.num_samples; i++) {
+    for (size_t i = 0; i < settings_.num_samples; i++) {
       cpu_tracer_.Update(scene);
     }
     write_image();

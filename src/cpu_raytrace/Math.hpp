@@ -72,4 +72,29 @@ inline vec3 Refract(const vec3& uv, const vec3& n, real etai_over_etat) {
   return r_out_perp + r_out_parallel;
 }
 
+inline ONBVecs GetONB(const vec3& n) {
+  ONBVecs onb;
+  onb[2] = glm::normalize(n);
+  bool close_to_1 = std::fabs(onb[2].x) > 0.9;
+  vec3 a = {static_cast<int>(!close_to_1), static_cast<int>(close_to_1), 0};
+  onb[1] = glm::normalize(glm::cross(onb[2], a));
+  onb[0] = glm::cross(onb[2], onb[1]);
+
+  return onb;
+}
+
+inline vec3 Transform(const ONBVecs& axis, const vec3& v) {
+  return (v[0] * axis[0]) + (v[1] * axis[1]) + (v[2] * axis[2]);
+}
+
+inline vec3 RandomCosineDirection() {
+  auto r1 = RandReal();
+  auto r2 = RandReal();
+  auto phi = 2 * std::numbers::pi * r1;
+  auto x = std::cos(phi) * std::sqrt(r2);
+  auto y = std::sin(phi) * std::sqrt(r2);
+  auto z = std::sqrt(1 - r2);
+  return {x, y, z};
+}
+
 }  // namespace raytrace2::cpu::math

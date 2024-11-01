@@ -6,7 +6,7 @@
 
 #include "cpu_raytrace/Camera.hpp"
 #include "cpu_raytrace/Material.hpp"
-#include "cpu_raytrace/Math.hpp"
+#include "cpu_raytrace/PDF.hpp"
 #include "cpu_raytrace/Scene.hpp"
 
 namespace raytrace2::cpu {
@@ -29,22 +29,40 @@ vec3 RayColor(const cpu::Ray& r, int depth, const Scene& scene) {
   Ray scattered;
   vec3 attenuation;
 
-  vec3 emission_color =
-      std::visit([&](auto&& material) { return material.Emit(scene.textures, rec.uv, rec.point); },
-                 *rec.material);
+  vec3 emission_color = std::visit(
+      [&](auto&& material) { return material.Emit(scene.textures, rec, rec.uv, rec.point); },
+      *rec.material);
 
+  real pdf_value = 1.0;
   bool is_scattered = std::visit(
       [&](auto&& material) {
-        return material.Scatter(scene.textures, r, rec, attenuation, scattered);
+        return material.Scatter(scene.textures, r, rec, attenuation, scattered, pdf_value);
       },
       *rec.material);
+
   if (!is_scattered) return emission_color;
+
+  if (!scene.lights.objects.empty()) {
+    HittablePDF light_surf_pdf(scene.lights, rec.point);
+
+    // scattered = Ray(rec.point, surface_pdf.Generate(), r.time);
+    // pdf_value = surface_pdf.Value(scattered.direction);
+
+    scattered = Ray(rec.point, light_surf_pdf.Generate(), r.time);
+    pdf_value = light_surf_pdf.Value(scattered.direction);
+  }
+
+  // auto p0 = std::make_shared<HittablePDF>(scene.lights, rec.point);
+  // auto p1 = std::make_shared<CosinePDF>(rec.normal);
+  // MixturePDF mixed_pdf{p0, p1};
+  // scattered = Ray{rec.point, mixed_pdf.Generate(), r.time};
+  // pdf_value = mixed_pdf.Value(scattered.direction);
 
   real scattering_pdf = std::visit(
       [&](auto&& material) { return material.ScatteringPDF(r, rec, scattered); }, *rec.material);
 
   vec3 color_from_scatter =
-      (attenuation * scattering_pdf * RayColor(scattered, depth - 1, scene)) / scattering_pdf;
+      (attenuation * scattering_pdf * RayColor(scattered, depth - 1, scene)) / pdf_value;
 
   return color_from_scatter + emission_color;
 }
@@ -61,7 +79,6 @@ void RayTracer::Reset() {
 #ifdef STRATIFY
 void RayTracer::Update(const Scene& scene) {
   camera->Update();
-  int samples_per_pix = camera->SamplesPerPixel();
   int sqrt_samples_per_pix = camera->SqrtSamplesPerPixel();
   // get s_j and s_i for this frame
   int s_i = frame_idx_ % sqrt_samples_per_pix;

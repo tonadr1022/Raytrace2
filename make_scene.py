@@ -362,7 +362,7 @@ def main():
     settings = {
         "render_once": True,
         "save_after_render_once": True,
-        "num_samples": 100,
+        "num_samples": 1000,
         "max_depth": 50,
         "render_window": True,
     }

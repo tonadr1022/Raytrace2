@@ -16,6 +16,7 @@ struct BVHNode;
 
 struct Scene {
   HittableList hittable_list;
+  HittableList lights;
   std::vector<MaterialVariant> materials;
   texture::TexArray textures;
   Camera cam;

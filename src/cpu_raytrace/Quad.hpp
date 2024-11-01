@@ -17,17 +17,24 @@ struct Quad : public Hittable {
     normal = glm::normalize(n);
     d = glm::dot(normal, q);
     w = n / glm::dot(n, n);
+    area = glm::length(n);
     SetBoundingBox();
   }
 
   bool Hit(const Scene& scene, const Ray& r, Interval ray_t, HitRecord& rec) const override;
+  bool Hit(const Ray& r, Interval ray_t, HitRecord& rec) const;
   [[nodiscard]] AABB GetAABB() const override { return aabb; };
+
+  [[nodiscard]] real PDFValue([[maybe_unused]] const vec3& origin,
+                              [[maybe_unused]] const vec3& dir) const override;
+  [[nodiscard]] vec3 Random([[maybe_unused]] const vec3& origin) const override;
 
   void SetBoundingBox() { aabb = AABB{AABB{q, q + u + v}, AABB{q + u, q + v}}; }
 
   AABB aabb;
   vec3 q, u, v, w, normal;
   real d;
+  real area;
   uint32_t material_handle;
 };
 

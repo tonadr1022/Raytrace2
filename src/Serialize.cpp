@@ -241,6 +241,7 @@ std::optional<cpu::Scene> SceneLoader::LoadScene(const std::string& filepath) {
     }
   }
 
+  std::vector<bool> are_materials_lights;
   for (const nlohmann::json& json_mat : json_materials) {
     std::string type = json_mat.value("type", "");
     if (type.empty()) {
@@ -249,6 +250,7 @@ std::optional<cpu::Scene> SceneLoader::LoadScene(const std::string& filepath) {
     }
 
     cpu::MaterialVariant mat;
+    bool is_light = false;
     if (type == "lambertian") {
       mat = cpu::MaterialLambertian{
           .albedo = ToVec3(json_mat.value("albedo", std::array<real, 3>{1, 1, 1}))};
@@ -269,6 +271,7 @@ std::optional<cpu::Scene> SceneLoader::LoadScene(const std::string& filepath) {
         PrintSceneError("invalid texture, must contain tex_idx or albedo");
       }
     } else if (type == "diffuse_light") {
+      is_light = true;
       if (json_mat.contains("tex_idx")) {
         mat = cpu::DiffuseLight{.tex_idx = json_mat.value("tex_idx", 0u)};
       } else if (json_mat.contains("albedo")) {
@@ -281,6 +284,7 @@ std::optional<cpu::Scene> SceneLoader::LoadScene(const std::string& filepath) {
     } else {
       PrintSceneError("Invalid material type");
     }
+    are_materials_lights.emplace_back(is_light);
     scene.materials.emplace_back(mat);
   }
 
@@ -292,26 +296,25 @@ std::optional<cpu::Scene> SceneLoader::LoadScene(const std::string& filepath) {
       PrintSceneError("Primitive needs type entry");
     }
     std::shared_ptr<cpu::Hittable> hittable{nullptr};
+    size_t material_idx = primitive.value("material", 0);
     if (type == "quad") {
       auto q = ToVec3(primitive.value("q", std::array<real, 3>{0, 0, 0}));
       auto u = ToVec3(primitive.value("u", std::array<real, 3>{1, 0, 0}));
       auto v = ToVec3(primitive.value("v", std::array<real, 3>{0, 0, 1}));
-      hittable = std::make_shared<cpu::Quad>(q, u, v, primitive.value("material", 0));
+      hittable = std::make_shared<cpu::Quad>(q, u, v, material_idx);
     } else if (type == "box") {
       auto a = ToVec3(primitive.value("a", std::array<real, 3>{0, 0, 0}));
       auto b = ToVec3(primitive.value("b", std::array<real, 3>{1, 1, 1}));
-      hittable =
-          std::make_shared<cpu::HittableList>(cpu::MakeBox(a, b, primitive.value("material", 0)));
+      hittable = std::make_shared<cpu::HittableList>(cpu::MakeBox(a, b, material_idx));
 
     } else if (type == "sphere") {
       std::array<real, 3> center = primitive.value("center", std::array<real, 3>{0, 0, 0});
       std::array<real, 3> displacement =
           primitive.value("displacement", std::array<real, 3>{0, 0, 0});
       real radius = primitive.value("radius", 0.5);
-      hittable =
-          std::make_shared<cpu::Sphere>(vec3{center[0], center[1], center[2]},
-                                        vec3{displacement[0], displacement[1], displacement[2]},
-                                        radius, primitive.value("material", 0));
+      hittable = std::make_shared<cpu::Sphere>(
+          vec3{center[0], center[1], center[2]},
+          vec3{displacement[0], displacement[1], displacement[2]}, radius, material_idx);
     } else {
       PrintSceneError("invalid primitive type");
       continue;
@@ -337,6 +340,11 @@ std::optional<cpu::Scene> SceneLoader::LoadScene(const std::string& filepath) {
       }
       real density = const_med_json.value("density", 0.01);
       hittable = std::make_shared<cpu::ConstantMedium>(hittable, density, material_idx);
+    }
+
+    if (material_idx < are_materials_lights.size() && material_idx > 0 &&
+        are_materials_lights[material_idx]) {
+      scene.lights.Add(hittable);
     }
     list.emplace_back(hittable);
   }
