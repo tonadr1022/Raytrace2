@@ -6,18 +6,7 @@ EXECUTABLE_PATH = "build/Release/src/raytrace_2"
 
 
 def run(name: str):
-    print("running")
     subprocess.run([EXECUTABLE_PATH, name])
-    print("done")
-    # process = subprocess.Popen(
-    #     [EXECUTABLE_PATH, name], stdout=subprocess.PIPE, text=True
-    # )
-    # process.communicate()  # Waits for the process to complete
-    #
-    # if process.returncode != 0:
-    #     print(f"Process failed with return code {process.returncode}")
-    # else:
-    #     print("Process completed successfully")
 
 
 def get_scene_json_path_str(name: str):
@@ -355,18 +344,18 @@ def run_book2_final_scene(name: str):
 
 
 def main():
-    # TODO: flags for whether to run the raytracer or not
+    # TODO: flags for settings
     settings = {
         "render_once": True,
         "save_after_render_once": True,
-        "num_samples": 10000,
+        "num_samples": 1000,
         "max_depth": 50,
-        "render_window": False,
+        "render_window": True,
     }
     write_json("data/settings.json", settings)
-    run_book2_final_scene("book2_final_scene_10000_samples")
+    run_cornell_box_original_scene("cornell_original_10000_samples")
+    # run_book2_final_scene("book2_final_scene_10000_samples")
     # run_cornell_box_volume_scene("cornell_volume_10000_samples")
-    # run_cornell_box_original_scene("cornell_original_10000_samples")
 
 
 if __name__ == "__main__":
