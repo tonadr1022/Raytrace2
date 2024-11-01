@@ -175,7 +175,6 @@ void App::Run(int argc, char* argv[]) {
 
   if (settings_.render_window) {
     while (!window_->ShouldClose()) {
-      ZoneScoped;
       prev_time = curr_time;
       curr_time = SDL_GetPerformanceCounter();
       dt = ((curr_time - prev_time) / static_cast<double>(SDL_GetPerformanceFrequency()));
@@ -216,6 +215,7 @@ void App::Run(int argc, char* argv[]) {
       static char scene_name[100];
       ImGui::Text("Frame Count %i", static_cast<int>(cpu_tracer_.FrameIdx()));
       ImGui::InputText("##Scene Name", scene_name, 100);
+      ImGui::Text("Target: %i", static_cast<int>(settings_.num_samples));
       ImGui::SameLine();
       if (ImGui::Button("Load Scene")) {
         serialize::SceneLoader loader;

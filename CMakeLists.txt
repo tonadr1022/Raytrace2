@@ -13,11 +13,8 @@ find_package(imgui CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
-find_package(Tracy CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
-add_compile_definitions(TRACY_ENABLE)
-option(TRACY_ENABLE "" ON)
 
 include_directories(src)
 add_subdirectory(src)

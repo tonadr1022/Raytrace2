@@ -1,23 +1,11 @@
 import random
 import json
 import subprocess
+import argparse
 
-EXECUTABLE_PATH = "build/Release/src/raytrace_2"
 
-
-def run(name: str):
-    print("running")
-    subprocess.run([EXECUTABLE_PATH, name])
-    print("done")
-    # process = subprocess.Popen(
-    #     [EXECUTABLE_PATH, name], stdout=subprocess.PIPE, text=True
-    # )
-    # process.communicate()  # Waits for the process to complete
-    #
-    # if process.returncode != 0:
-    #     print(f"Process failed with return code {process.returncode}")
-    # else:
-    #     print("Process completed successfully")
+def run(path: str, name: str):
+    subprocess.run([path, name])
 
 
 def get_scene_json_path_str(name: str):
@@ -328,45 +316,53 @@ def set_cornell_cam(scene: Scene):
     scene.camera["fov"] = 40
 
 
-def run_cornell_box_original_scene(name: str):
+def run_cornell_box_original_scene():
     scene = Scene()
     add_cornell_box(scene)
     add_regular_cornell_boxes(scene)
     set_cornell_cam(scene)
-    scene.write_json(get_scene_json_path_str(name))
-    run(name)
+    return scene
 
 
-def run_cornell_box_volume_scene(name: str):
+def make_cornell_box_volume_scene():
     scene = Scene()
     add_volume_cornell_boxes(scene)
     add_cornell_box(scene)
     set_cornell_cam(scene)
-    scene.write_json(get_scene_json_path_str(name))
-    run(name)
+    return scene
 
 
-def run_book2_final_scene(name: str):
+def run_book2_final_scene():
     scene = make_book2_final_scene()
     scene.camera["center"] = [478, 278, -600]
     scene.camera["look_at"] = [278, 278, 0]
-    scene.write_json(get_scene_json_path_str(name))
-    run(name)
+    return scene
 
 
 def main():
-    # TODO: flags for whether to run the raytracer or not
+    parser = argparse.ArgumentParser(prog="Make Run Scene")
+    parser.add_argument(
+        "-m",
+        "--mode",
+        choices=["Release", "Debug", "RelWithDebInfo"],
+        default="Release",
+    )
+    args = parser.parse_args()
+    EXECUTABLE_PATH = f"build/{args.mode}/src/raytrace_2"
     settings = {
         "render_once": True,
         "save_after_render_once": True,
-        "num_samples": 10000,
+        "num_samples": 1000,
         "max_depth": 50,
-        "render_window": False,
+        "render_window": True,
     }
     write_json("data/settings.json", settings)
-    run_book2_final_scene("book2_final_scene_10000_samples")
+    name = get_scene_json_path_str("cornell_original_10000_samples")
+    scene = run_cornell_box_original_scene()
+    # scene = run_book2_final_scene("book2_final_scene_10000_samples")
     # run_cornell_box_volume_scene("cornell_volume_10000_samples")
-    # run_cornell_box_original_scene("cornell_original_10000_samples")
+    scene.write_json(name)
+    run(EXECUTABLE_PATH, name)
 
 
 if __name__ == "__main__":

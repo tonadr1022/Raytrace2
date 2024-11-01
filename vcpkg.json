@@ -2,19 +2,11 @@
   "dependencies": [
     "glew",
     "glm",
-    "tracy",
     "sdl2",
     "nlohmann-json",
     {
       "name": "imgui",
       "features": ["opengl3-binding", "sdl2-binding"]
-    }
-  ],
-  "builtin-baseline": "a74164519874e4671e9e496444148df1d7f5006c",
-  "overrides": [
-    {
-      "name": "tracy",
-      "version": "0.10.0"
     }
   ]
 }

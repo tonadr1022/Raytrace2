@@ -53,5 +53,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     GLEW::GLEW
     glm::glm
     nlohmann_json::nlohmann_json
-    Tracy::TracyClient
 )
