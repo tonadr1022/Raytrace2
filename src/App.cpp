@@ -79,7 +79,7 @@ void App::OnResize(glm::ivec2 dims) {
 }
 
 void App::Run(int argc, char* argv[]) {
-  settings_ = serialize::LoadAppSettings(GET_PATH("data/settings.json"));
+  settings_ = serialize::LoadAppSettings(GET_PATH("local/data/settings.json"));
 
   std::string full_scene_path;
   std::string filename;
@@ -97,7 +97,6 @@ void App::Run(int argc, char* argv[]) {
       filename = full_scene_path;
       full_scene_path += suffix;
     }
-    full_scene_path = GET_PATH("data/") + full_scene_path;
   }
   bool user_defined_output_path = false;
   std::string image_output_path;
@@ -162,11 +161,12 @@ void App::Run(int argc, char* argv[]) {
   double dt = 0;
 
   auto write_image = [&, this]() {
-    if (!std::filesystem::exists(GET_PATH("output/"))) {
-      std::filesystem::create_directory(GET_PATH("output/"));
+    if (!std::filesystem::exists(GET_PATH("local/output/"))) {
+      std::filesystem::create_directory(GET_PATH("local/output/"));
     }
     if (!user_defined_output_path) {
-      image_output_path = GET_PATH("output/") + filename + "_" + util::CurrentDateTime() + ".png";
+      image_output_path =
+          GET_PATH("local/output/") + filename + "_" + util::CurrentDateTime() + ".png";
     }
     std::cout << "Writing image: " << image_output_path << '\n';
     util::WriteImage(cpu_tracer_.NonConvertedPixels(), cpu_tracer_.Dims().x, cpu_tracer_.Dims().y,
@@ -175,7 +175,6 @@ void App::Run(int argc, char* argv[]) {
 
   if (settings_.render_window) {
     while (!window_->ShouldClose()) {
-      ZoneScoped;
       prev_time = curr_time;
       curr_time = SDL_GetPerformanceCounter();
       dt = ((curr_time - prev_time) / static_cast<double>(SDL_GetPerformanceFrequency()));
@@ -216,10 +215,11 @@ void App::Run(int argc, char* argv[]) {
       static char scene_name[100];
       ImGui::Text("Frame Count %i", static_cast<int>(cpu_tracer_.FrameIdx()));
       ImGui::InputText("##Scene Name", scene_name, 100);
+      ImGui::Text("Target: %i", static_cast<int>(settings_.num_samples));
       ImGui::SameLine();
       if (ImGui::Button("Load Scene")) {
         serialize::SceneLoader loader;
-        auto scene_opt = loader.LoadScene(GET_PATH("data/") + std::string(scene_name));
+        auto scene_opt = loader.LoadScene(GET_PATH("local/data/") + std::string(scene_name));
         if (scene_opt.has_value()) {
           scene = scene_opt.value();
           cpu_tracer_.Reset();
@@ -241,7 +241,7 @@ void App::Run(int argc, char* argv[]) {
       window_->EndRenderFrame(imgui_enabled_);
     }
   } else {
-    for (int i = 0; i < settings_.num_samples; i++) {
+    for (size_t i = 0; i < settings_.num_samples; i++) {
       cpu_tracer_.Update(scene);
     }
     write_image();

@@ -4,7 +4,7 @@ This is my second iteration of a CPU-based ray tracer following the book series 
 I generally followed the books but included extra features including a live view into the render via OpenGL, a scene data format in JSON
 to author scenes without recompilation, parallel execution, and a scene graph.
 
-### Building Locally
+## Building Locally
 
 Currently, OpenGL 4.6 is required to run locally, eliminating the MacOS platform.
 
@@ -18,7 +18,7 @@ cd ..
 python make_scene.py
 ```
 
-### Implemented Features
+## Implemented Features
 
 - Spheres, quads, and boxes
 - Lambertians, metals, dielectrics, constant medium volumes, and procedural textures
@@ -28,7 +28,10 @@ python make_scene.py
 - Lights
 - Scene graph/transformations
 
-### Dependencies
+![Final Render 2](screenshots/final_scene2.png)
+![Cornell Box](screenshots/cornell_box.png)
+
+## Dependencies
 
 - [GLEW](https://github.com/nigels-com/glew) - OpenGL functions
 - [GLM](https://github.com/g-truc/glm) - Vector math

@@ -54,7 +54,6 @@ void RayTracer::Reset() {
 
 void RayTracer::Update(const Scene& scene) {
   camera->Update();
-  int samples_per_pix = camera->SamplesPerPixel();
   int sqrt_samples_per_pix = camera->SqrtSamplesPerPixel();
   // get s_j and s_i for this frame
   int s_i = frame_idx_ % sqrt_samples_per_pix;

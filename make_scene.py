@@ -1,16 +1,12 @@
+import os
 import random
 import json
 import subprocess
-
-EXECUTABLE_PATH = "build/Release/src/raytrace_2"
-
-
-def run(name: str):
-    subprocess.run([EXECUTABLE_PATH, name])
+import argparse
 
 
-def get_scene_json_path_str(name: str):
-    return f"data/{name}.json"
+def run(path: str, name: str):
+    subprocess.run([path, name])
 
 
 class Scene:
@@ -317,45 +313,51 @@ def set_cornell_cam(scene: Scene):
     scene.camera["fov"] = 40
 
 
-def run_cornell_box_original_scene(name: str):
+def run_cornell_box_original_scene():
     scene = Scene()
     add_cornell_box(scene)
     add_regular_cornell_boxes(scene)
     set_cornell_cam(scene)
-    scene.write_json(get_scene_json_path_str(name))
-    run(name)
+    return scene
 
 
-def run_cornell_box_volume_scene(name: str):
+def make_cornell_box_volume_scene():
     scene = Scene()
     add_volume_cornell_boxes(scene)
     add_cornell_box(scene)
     set_cornell_cam(scene)
-    scene.write_json(get_scene_json_path_str(name))
-    run(name)
+    return scene
 
 
-def run_book2_final_scene(name: str):
+def run_book2_final_scene():
     scene = make_book2_final_scene()
     scene.camera["center"] = [478, 278, -600]
     scene.camera["look_at"] = [278, 278, 0]
-    scene.write_json(get_scene_json_path_str(name))
-    run(name)
+    return scene
 
 
 def main():
-    # TODO: flags for settings
+    parser = argparse.ArgumentParser(prog="Make Run Scene")
+    parser.add_argument("-p", "--path", default="build/Release/src/raytrace_2")
+    args = parser.parse_args()
     settings = {
         "render_once": True,
         "save_after_render_once": True,
-        "num_samples": 1000,
+        "num_samples": 10,
         "max_depth": 50,
         "render_window": True,
     }
-    write_json("data/settings.json", settings)
-    run_cornell_box_original_scene("cornell_original_10000_samples")
-    # run_book2_final_scene("book2_final_scene_10000_samples")
+    os.makedirs("local/data", exist_ok=True)
+    write_json("local/data/settings.json", settings)
+
+    name = "cornell_original_10000_samples"
+    json_path = f"local/data/{name}.json"
+    scene = run_cornell_box_original_scene()
+    # scene = run_book2_final_scene("book2_final_scene_10000_samples")
     # run_cornell_box_volume_scene("cornell_volume_10000_samples")
+
+    scene.write_json(json_path)
+    run(args.path, json_path)
 
 
 if __name__ == "__main__":

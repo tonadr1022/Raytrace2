@@ -11,6 +11,7 @@ resources/icons
 resources/worlds/**
 output
 .DS_Store
+local
 
 imgui.ini
 
